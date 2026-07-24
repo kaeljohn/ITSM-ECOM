@@ -10,7 +10,8 @@
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
         "nwidart/laravel-modules": "^13.0",
-        "laravel/socialite": "^5.28"
+        "laravel/socialite": "^5.28",
+        "filament/filament": "^5.7"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -62,7 +63,8 @@
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
+            "@php artisan package:discover --ansi",
+            "@php artisan filament:upgrade"
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"

@@ -128,7 +128,7 @@
                         <td style="text-align:center;padding:12px 4px;">
                             <form method="POST" action="{{ route('inventory.item-catalog.destroy', $item['id']) }}" onsubmit="return confirm('Delete this item permanently?')" style="display:inline;">
                                 @csrf @method('DELETE')
-                                <button type="submit" style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:13px;padding:4px 8px;">🗑</button>
+                                <button type="submit" style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:13px;padding:4px 8px;">ðŸ—‘</button>
                             </form>
                         </td>
                     </tr>
@@ -202,7 +202,7 @@
                         <td style="text-align:center;padding:12px 6px;font-size:13px;">
                             <span style="background:{{ $pm->is_box ? '#dbeafe' : '#e2e8f0' }};color:{{ $pm->is_box ? '#1e40af' : '#64748b' }};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">{{ $pm->is_box ? 'Box' : 'Material' }}</span>
                         </td>
-                        <td style="text-align:center;padding:12px 6px;font-size:13px;color:#5B7A9D;">{{ $pm->box_size ?? '—' }}</td>
+                        <td style="text-align:center;padding:12px 6px;font-size:13px;color:#5B7A9D;">{{ $pm->box_size ?? 'â€”' }}</td>
                         <td style="text-align:center;padding:12px 6px;">
                             @php $pmStatus = $pm->stock_qty <= 0 ? 'Out of Stock' : ($pm->stock_qty <= $pm->low_stock_threshold ? 'Low Stock' : 'In Stock'); $pmColors = ['In Stock'=>['bg'=>'#dcfce7','text'=>'#166534'],'Low Stock'=>['bg'=>'#fef9c3','text'=>'#854d0e'],'Out of Stock'=>['bg'=>'#fee2e2','text'=>'#991b1b']]; $pc = $pmColors[$pmStatus]; @endphp
                             <span style="background:{{ $pc['bg'] }};color:{{ $pc['text'] }};font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;">{{ $pmStatus }}</span>
@@ -210,7 +210,7 @@
                         <td style="text-align:center;padding:12px 6px;">
                             <form method="POST" action="{{ route('inventory.item-catalog.packing.destroy', $pm->id) }}" onsubmit="return confirm('Delete this packing material?')" style="display:inline;">
                                 @csrf @method('DELETE')
-                                <button type="submit" style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:13px;padding:4px 8px;">🗑</button>
+                                <button type="submit" style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:13px;padding:4px 8px;">ðŸ—‘</button>
                             </form>
                         </td>
                     </tr>
