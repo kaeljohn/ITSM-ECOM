@@ -10,7 +10,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         using: function () {
             Route::middleware('web')
-                ->group(__DIR__.'/../Modules/E-Commerce/Blueprint/routes/web.php');
+                ->group(__DIR__.'/../Modules/E-Commerce/Techforge/routes/web.php');
             
             Route::middleware('web')
                 ->group(__DIR__.'/../routes/web.php');

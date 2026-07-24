@@ -18,6 +18,10 @@ class ManufacturingServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'manufacturing');
+        // Manufacturing owns a separate connection. Register its migrations
+        // here so a fresh Manufacturing database is initialized by the normal
+        // deployment migration command rather than silently using Finance.
+        $this->loadMigrationsFrom(__DIR__.'/../../database/manual-migrations');
 
         Route::middleware('web')->prefix('manufacturing')->group(__DIR__.'/../../routes/web.php');
     }

@@ -7,13 +7,14 @@ use Illuminate\Support\Facades\DB;
 use Modules\OrderFulfillment\Models\Order;
 use Modules\OrderFulfillment\Models\Shipment;
 use Modules\OrderFulfillment\Models\DeliveryMan;
-use Modules\OrderFulfillment\Models\ReturnItem;
-use Modules\OrderFulfillment\App\Helpers\OrderStatus;
+use Modules\OrderFulfillment\Helpers\OrderStatus;
 use Modules\OrderFulfillment\Models\OrderItem;
-use Illuminate\Support\Str;
+use Modules\OrderFulfillment\Http\Controllers\Concerns\CancelsShipmentToReturn;
 
 class ShippingController extends Controller
 {
+    use CancelsShipmentToReturn;
+
     public function index()
     {
         // Promote anything that's been sitting at SHIPPED for 24+ hours to
@@ -23,6 +24,28 @@ class ShippingController extends Controller
             ->whereNotNull('shipped_at')
             ->where('shipped_at', '<=', now()->subDay())
             ->update(['status' => 'READY_TO_SHIP']);
+
+        // Promote anything that's been OUT_FOR_DELIVERY for 1+ hour to
+        // DELIVERED. Same "recalculate on page load" pattern as the
+        // promotion above — the difference is DELIVERED also needs to free
+        // up the driver (a plain mass ->update() can't do that per-row), so
+        // this loops each shipment individually instead.
+        Shipment::where('status', 'OUT_FOR_DELIVERY')
+            ->whereNotNull('out_for_delivery_at')
+            ->where('out_for_delivery_at', '<=', now()->subHour())
+            ->get()
+            ->each(function (Shipment $shipment) {
+                DB::transaction(function () use ($shipment) {
+                    // Mirrors onto the parent Order via Shipment::booted()'s
+                    // `updated` hook, same as every other status change here.
+                    $shipment->update(['status' => 'DELIVERED']);
+
+                    if ($shipment->delivery_man_id) {
+                        DeliveryMan::where('id', $shipment->delivery_man_id)
+                            ->update(['status' => DeliveryMan::STATUS_AVAILABLE]);
+                    }
+                });
+            });
 
         $shipments = Shipment::select(
             'shipment_id',
@@ -72,24 +95,31 @@ class ShippingController extends Controller
             $shipment->items_count = $orderItems->count();
         });
 
-        $shippedToday = Order::whereDate('updated_at', today())
-            ->where('status', 'SHIPPED')
+        // "In shipping" = every order that has left packing but hasn't been
+        // delivered yet, across its whole lifetime (not just today) — so it
+        // covers SHIPPED, READY_TO_SHIP, OUT_FOR_DELIVERY, and DELAYED.
+        // Previously this only counted status == 'SHIPPED' updated today,
+        // which undercounted anything sitting in the other in-transit
+        // statuses (e.g. showed 5 instead of 7 with 7 shipped orders).
+        $inShipping = Order::whereIn('status', ['SHIPPED', 'READY_TO_SHIP', 'OUT_FOR_DELIVERY', 'DELAYED'])
             ->count();
 
-        $inTransit = Order::whereDate('updated_at', today())
-            ->where('status', 'OUT_FOR_DELIVERY')
-            ->count();
+        $inTransit = Order::where('status', 'OUT_FOR_DELIVERY')->count();
 
-        $delayed = Order::whereDate('updated_at', today())
-            ->where('status', 'DELAYED')
-            ->count();
+        $delayed = Order::where('status', 'DELAYED')->count();
 
-        $delivered = Order::whereDate('updated_at', today())
-            ->where('status', 'DELIVERED')
-            ->count();
+        $delivered = Order::where('status', 'DELIVERED')->count();
 
-        $onTimeRate = $delivered
-            ? round(($delivered / ($delivered + $delayed)) * 100)
+        // Delivery rate = delivered orders as a share of ALL orders.
+        // Must use the same formula as the Dashboard and Orders tabs
+        // (delivered / totalOrders), not delivered / (delivered + delayed)
+        // — the latter ignores everything still sitting in packing or
+        // in transit, so it can read 100% while most orders haven't
+        // actually been delivered yet.
+        $totalOrders = Order::count();
+
+        $onTimeRate = $totalOrders > 0
+            ? round(($delivered / $totalOrders) * 100)
             : 0;
 
         // Delivery alerts panel: recently-changed shipments, newest first.
@@ -111,7 +141,7 @@ class ShippingController extends Controller
 
         return view('order-fulfillment::shipping', compact(
             'shipments',
-            'shippedToday',
+            'inShipping',
             'inTransit',
             'delayed',
             'delivered',
@@ -146,8 +176,17 @@ class ShippingController extends Controller
      */
     public function assignDriver(Request $request, string $shipmentId)
     {
+        // 'exists:delivery_men,id' checks Laravel's *default* DB connection,
+        // but delivery_men — like orders and packing_materials elsewhere in
+        // this module — lives on its own connection, not the default one.
+        // Resolving it off the model itself (rather than hardcoding a
+        // connection name here) keeps this in sync automatically if that
+        // ever changes.
+        $driverModel = new DeliveryMan();
+        $driverTable = ($driverModel->getConnectionName() ? $driverModel->getConnectionName() . '.' : '') . $driverModel->getTable();
+
         $validated = $request->validate([
-            'driver_id' => 'required|string|exists:delivery_men,id',
+            'driver_id' => "required|string|exists:{$driverTable},id",
         ]);
 
         $shipment = Shipment::where('shipment_id', $shipmentId)->firstOrFail();
@@ -164,8 +203,9 @@ class ShippingController extends Controller
 
         DB::transaction(function () use ($shipment, $driver) {
             $shipment->update([
-                'delivery_man_id' => $driver->id,
-                'status' => 'OUT_FOR_DELIVERY',
+                'delivery_man_id'     => $driver->id,
+                'status'              => 'OUT_FOR_DELIVERY',
+                'out_for_delivery_at' => now(),
             ]);
 
             $driver->update(['status' => DeliveryMan::STATUS_UNAVAILABLE]);
@@ -187,55 +227,22 @@ class ShippingController extends Controller
     {
         $shipment = Shipment::where('shipment_id', $shipmentId)->firstOrFail();
 
-        if (strtoupper($shipment->status) === 'DELIVERED') {
+        $status = strtoupper($shipment->status);
+
+        // Once a driver has it (OUT_FOR_DELIVERY) or it's already arrived
+        // (DELIVERED), there's nothing left to pull back. Same rule
+        // OrderController::cancel enforces from the Orders tab.
+        if (in_array($status, $this->nonCancellableShipmentStatuses())) {
             return response()->json([
-                'message' => 'This order has already been delivered and can no longer be cancelled.',
+                'message' => 'This order is ' . strtolower(str_replace('_', ' ', $status)) . ' and can no longer be cancelled.',
             ], 422);
         }
 
-        DB::transaction(function () use ($shipment) {
-            $orderItems = OrderItem::where('order_id', $shipment->order_id)
-                ->get(['product_name', 'qty', 'product_amount']);
-
-            // line_total isn't a real order_items column — it's derived
-            // (qty * product_amount) — so sum it in PHP the same way
-            // index() and the order-detail modal already do, rather than
-            // selecting it directly in the query.
-            $refundAmount = $orderItems->sum(function (OrderItem $item) {
-                return $item->qty * $item->product_amount;
-            });
-
-            ReturnItem::create([
-                'id'            => (string) Str::uuid(),
-                'order_id'      => $shipment->order_id,
-                'customer_name' => $shipment->customer_name,
-                'product_name'  => $orderItems->pluck('product_name')->implode(', ') ?: 'N/A',
-                'reason'        => 'Cancelled while shipping',
-                // Admin cancelled this after it had already left for delivery,
-                // so there's nothing to "review" — it just needs to make its
-                // way back to the warehouse. ReturnController::index() auto-
-                // promotes this to Completed / Returned to Inventory 24h later,
-                // the same way Shipment::SHIPPED auto-promotes on the shipping page.
-                'status'        => 'In Transit to Warehouse',
-                'resolution'    => 'Pending',
-                'due_date'      => $shipment->due_date,
-                'address'       => $shipment->address,
-                'refund_amount' => $refundAmount,
-            ]);
-
-            // Free up the driver, if one was already assigned, same as a
-            // normal delivery completion would.
-            if ($shipment->delivery_man_id) {
-                DeliveryMan::where('id', $shipment->delivery_man_id)
-                    ->update(['status' => DeliveryMan::STATUS_AVAILABLE]);
-            }
-
-            // Setting status to CANCELLED both removes it from the shipping
-            // index (which only pulls SHIPPED/READY_TO_SHIP/OUT_FOR_DELIVERY/
-            // DELAYED/DELIVERED) and, via Shipment::booted()'s `updated`
-            // hook, mirrors the same status onto the parent Order.
-            $shipment->update(['status' => 'CANCELLED']);
-        });
+        // Setting status to CANCELLED both removes it from the shipping
+        // index (which only pulls SHIPPED/READY_TO_SHIP/OUT_FOR_DELIVERY/
+        // DELAYED/DELIVERED) and, via Shipment::booted()'s `updated`
+        // hook, mirrors the same status onto the parent Order.
+        $this->cancelShipmentToReturn($shipment, 'Cancelled while shipping');
 
         return response()->json([
             'message' => 'Order cancelled and moved to Returns.',

@@ -27,7 +27,9 @@ Route::prefix('order-fulfillment')->name('order-fulfillment.')->middleware('orde
 
     Route::post('/material-requests', [MaterialRequestController::class, 'store'])->name('material-requests.store');
 
-    Route::get('/returns', [ReturnController::class, 'index'])->name('return');
+Route::get('returns', [ReturnController::class, 'index'])->name('return');
+Route::post('returns/{id}/accept', [ReturnController::class, 'accept'])->name('returns.accept');
+Route::post('returns/{id}/status', [ReturnController::class, 'updateStatus'])->name('returns.status');
 
     Route::post('/logout', function () {
         Auth::logout();

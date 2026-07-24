@@ -7,6 +7,8 @@ return [
         'Cancelled' => ['pill' => 'bg-nexora-gray/80 text-nexora-off-white',    'dot' => 'bg-nexora-gray'],
         'Pending'   => ['pill' => 'bg-nexora-danger/80 text-nexora-off-white',  'dot' => 'bg-nexora-danger'],
         'Finished'  => ['pill' => 'bg-nexora-success/80 text-nexora-off-white', 'dot' => 'bg-nexora-success'],
+        'Completed' => ['pill' => 'bg-nexora-success/80 text-nexora-off-white', 'dot' => 'bg-nexora-success'],
+        'Rework'    => ['pill' => 'bg-nexora-warning/80 text-nexora-off-white', 'dot' => 'bg-nexora-warning'],
     ],
 
     'partStyles' => [

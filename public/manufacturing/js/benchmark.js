@@ -174,12 +174,12 @@ async function saveBenchmarkResults() {
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': payload._token },
             body:    JSON.stringify(payload),
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (data.success) {
             document.getElementById('bm-save-msg').classList.remove('hidden');
             setTimeout(() => window.location.reload(), 800);
         } else {
-            alert('Save failed: ' + (data.message ?? 'Unknown error'));
+            alert('Save failed: ' + (data.message ?? `Server error (${res.status})`));
         }
     } catch (err) {
         alert('Network error — could not save results.');

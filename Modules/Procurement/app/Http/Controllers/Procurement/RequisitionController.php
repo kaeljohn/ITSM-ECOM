@@ -11,7 +11,7 @@ class RequisitionController extends Controller
 {
     private function getRequisitionConnection()
     {
-        foreach (['orderfullfillment', 'manufacturing'] as $connectionName) {
+        foreach (['order_fulfillment', 'manufacturing'] as $connectionName) {
             try {
                 $connection = DB::connection($connectionName);
                 if ($connection->getSchemaBuilder()->hasTable('requisitions')) {
@@ -29,7 +29,7 @@ class RequisitionController extends Controller
     {
         $connections = [];
 
-        foreach (['orderfullfillment', 'manufacturing'] as $connectionName) {
+        foreach (['order_fulfillment', 'manufacturing'] as $connectionName) {
             try {
                 $connection = DB::connection($connectionName);
                 if ($connection->getSchemaBuilder()->hasTable('requisitions')) {
@@ -139,7 +139,12 @@ class RequisitionController extends Controller
 
     private function getRequisitionSelectFields($connection): array
     {
-        if ($connection->getName() === 'orderfullfillment') {
+        // Order Fulfillment and Manufacturing intentionally use different
+        // requisition schemas.  Keep the mapping tied to the actual Laravel
+        // connection name: a previous spelling of `order_fulfillment` here
+        // made the fulfillment rows select Manufacturing-only columns
+        // (`req_id`, `part_name`, and `quantity`) and broke the inbox page.
+        if ($connection->getName() === 'order_fulfillment') {
             return [
                 'id',
                 'req_number as requisition_number',
@@ -179,12 +184,24 @@ class RequisitionController extends Controller
     public function index(Request $request)
     {
         $requisitions = collect();
+        $clientId = (int) session('employee_client_id');
+        $rootTesting = config('nexora.root_admin_module_testing')
+            && $request->user()?->role === 'root_admin';
 
         foreach ($this->getRequisitionConnections() as $connection) {
             $this->ensureRequisitionTable($connection);
-            $connectionRequisitions = $connection
+            $query = $connection
                 ->table('requisitions')
-                ->select($this->getRequisitionSelectFields($connection))
+                ->select($this->getRequisitionSelectFields($connection));
+
+            // Both current source schemas are client-scoped.  Retain the
+            // legacy-column guard so a not-yet-upgraded Manufacturing schema
+            // does not turn this page into a server error.
+            if (! $rootTesting && $this->requisitionHasColumn($connection, 'client_id')) {
+                $query->where('client_id', $clientId);
+            }
+
+            $connectionRequisitions = $query
                 ->orderBy('created_at', 'desc')
                 ->get();
 
@@ -198,19 +215,18 @@ class RequisitionController extends Controller
         $requisitionRefs = $requisitions->pluck('requisition_number')->filter()->all();
 
         $purchaseOrders = collect();
-        foreach ($this->getRequisitionConnections() as $connection) {
-            try {
-                if ($connection->getSchemaBuilder()->hasTable('purchase_orders')) {
-                    $purchaseOrders = $connection
-                        ->table('purchase_orders')
-                        ->whereIn('requisition_reference', $requisitionRefs)
-                        ->get()
-                        ->keyBy('requisition_reference');
-                    break;
-                }
-            } catch (\Exception $e) {
-                // ignore broken or unavailable external DB connections
+        if ($requisitionRefs !== []) {
+            $purchaseOrderQuery = DB::connection('procurement')
+                ->table('purchase_orders')
+                ->whereIn('requisition_reference', $requisitionRefs);
+
+            if (! $rootTesting) {
+                $purchaseOrderQuery->where('client_id', $clientId);
             }
+
+            $purchaseOrders = $purchaseOrderQuery
+                ->get()
+                ->keyBy('requisition_reference');
         }
 
         $requisitions = $requisitions->map(function ($req) use ($purchaseOrders) {

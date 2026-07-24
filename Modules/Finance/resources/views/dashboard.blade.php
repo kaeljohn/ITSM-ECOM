@@ -34,7 +34,7 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
           </div>
         </div>
       </div>
-      <div class="text-2xl font-bold mt-2" id="cashFlowBalance">â‚±0</div>
+      <div class="text-2xl font-bold mt-2" id="cashFlowBalance">₱0</div>
       <p class="text-muted text-xs mb-2">Current cash balance</p>
       <div class="flex gap-2 flex-1">
         <div id="cashFlowYAxis" class="flex flex-col justify-between text-[10px] text-muted py-1"></div>
@@ -59,7 +59,7 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
           </div>
         </div>
       </div>
-      <div class="text-2xl font-bold mt-2" id="expensesTotal">â‚±0</div>
+      <div class="text-2xl font-bold mt-2" id="expensesTotal">₱0</div>
       <p class="text-muted text-xs mb-3">Business spending</p>
       <div class="flex items-center gap-4 flex-1">
         <svg id="expensesDonut" viewBox="0 0 42 42" class="w-20 h-20 -rotate-90 shrink-0"></svg>
@@ -69,12 +69,12 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
 
     <div class="bg-navy-800 rounded-xl p-5 flex flex-col">
       <h3 class="text-sm font-semibold tracking-wide">PROFIT AND LOSS</h3>
-      <div class="text-2xl font-bold mt-2" id="netIncome">â‚±0</div>
+      <div class="text-2xl font-bold mt-2" id="netIncome">₱0</div>
       <p class="text-muted text-xs mb-4">Net income</p>
       <div class="space-y-4 flex-1">
         <div>
           <div class="flex items-center justify-between text-xs mb-1">
-            <span>Income <span class="text-muted" id="incomeValue">â‚±0</span></span>
+            <span>Income <span class="text-muted" id="incomeValue">₱0</span></span>
             <span class="text-muted" id="incomePct">0%</span>
           </div>
           <div class="h-1.5 bg-navy-700 rounded-full overflow-hidden">
@@ -83,7 +83,7 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
         </div>
         <div>
           <div class="flex items-center justify-between text-xs mb-1">
-            <span>Expenses <span class="text-muted" id="plExpensesValue">â‚±0</span></span>
+            <span>Expenses <span class="text-muted" id="plExpensesValue">₱0</span></span>
             <span class="text-muted" id="plExpensesPct">0%</span>
           </div>
           <div class="h-1.5 bg-navy-700 rounded-full overflow-hidden">
@@ -96,18 +96,18 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
     <div class="bg-navy-800 rounded-xl p-5 flex flex-col">
       <div class="flex items-center justify-between">
         <h3 class="text-sm font-semibold tracking-wide">INVOICES</h3>
-        <span class="text-muted text-xs" id="invoicesUnpaid">â‚±0 unpaid</span>
+        <span class="text-muted text-xs" id="invoicesUnpaid">₱0 unpaid</span>
       </div>
       <div class="mt-3">
-        <div class="text-2xl font-bold" id="invoicesOverdueValue">â‚±0</div>
+        <div class="text-2xl font-bold" id="invoicesOverdueValue">₱0</div>
         <p class="text-red-400 text-xs mb-1">Overdue</p>
         <div class="h-1 bg-navy-700 rounded-full overflow-hidden">
           <div class="h-full bg-red-500 rounded-full" id="invoicesOverdueBar" style="width:0%"></div>
         </div>
       </div>
       <div class="mt-5">
-        <p class="text-muted text-xs" id="invoicesPaid">â‚±0 paid</p>
-        <div class="text-2xl font-bold" id="invoicesDepositedValue">â‚±0</div>
+        <p class="text-muted text-xs" id="invoicesPaid">₱0 paid</p>
+        <div class="text-2xl font-bold" id="invoicesDepositedValue">₱0</div>
         <p class="text-blue-400 text-xs mb-1">Deposited</p>
         <div class="h-1 bg-navy-700 rounded-full overflow-hidden">
           <div class="h-full bg-blue-500 rounded-full" id="invoicesDepositedBar" style="width:0%"></div>
@@ -137,8 +137,8 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
         </div>
 
         <div class="flex items-center gap-2 mt-2">
-          <span class="text-3xl font-bold" id="revenueTotal">â‚±0</span>
-          <span class="text-xs font-semibold rounded-full px-2 py-0.5 bg-emerald-500/20 text-emerald-400" id="revenueChangeBadge">â†‘ 0%</span>
+          <span class="text-3xl font-bold" id="revenueTotal">₱0</span>
+          <span class="text-xs font-semibold rounded-full px-2 py-0.5 bg-emerald-500/20 text-emerald-400" id="revenueChangeBadge">₱‘ 0%</span>
         </div>
         <p class="text-muted text-xs mb-3" id="revenueChangeSub"></p>
       </div>
@@ -223,7 +223,7 @@ document.addEventListener("click", (e) => {
   if (!e.target.closest(".dd-menu") && !e.target.closest(".dd-toggle")) closeAllMenus();
 });
 
-function fmtPeso(n){ return "â‚±" + Number(n || 0).toLocaleString(); }
+function fmtPeso(n){ return "₱" + Number(n || 0).toLocaleString(); }
 
 function getPeriodLabels(period){
   switch(period){
@@ -274,7 +274,7 @@ function renderCashFlowChart(){
   const steps = 4;
   yAxisEl.innerHTML = Array.from({ length: steps + 1 }).map((_, i) => {
     const val = hasData ? Math.round(maxVal * (1 - i / steps)) : 0;
-    return `<span>â‚±${(val / 1000).toFixed(0)}k</span>`;
+    return `<span>₱${(val / 1000).toFixed(0)}k</span>`;
   }).join("");
 
   const base = document.createElementNS("http://www.w3.org/2000/svg","line");
@@ -429,7 +429,7 @@ function renderMonthlyRevenue(){
   document.getElementById("revenueTotal").textContent = fmtPeso(d.total);
   const badge = document.getElementById("revenueChangeBadge");
   const up = d.changePct >= 0;
-  badge.textContent = `${up ? "â†‘" : "â†“"} ${Math.abs(d.changePct)}%`;
+  badge.textContent = `${up ? "₱" : "₱"} ${Math.abs(d.changePct)}%`;
   badge.className = `text-xs font-semibold rounded-full px-2 py-0.5 ${up ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`;
   document.getElementById("revenueChangeSub").textContent = d.changeSub;
   renderRevenueChart();
@@ -453,7 +453,7 @@ function renderRevenueChart(){
   const steps = 3;
   yAxisEl.innerHTML = Array.from({ length: steps + 1 }).map((_, i) => {
     const val = hasData ? Math.round(maxVal * (1 - i / steps)) : 0;
-    return `<span>â‚±${(val / 1000).toFixed(0)}k</span>`;
+    return `<span>₱${(val / 1000).toFixed(0)}k</span>`;
   }).join("");
 
   const xFor = (i) => padX + (i * (w - padX * 2) / (months.length - 1));
@@ -541,7 +541,7 @@ function renderInvoiceTrendChart(){
   const steps = 3;
   yAxisEl.innerHTML = Array.from({ length: steps + 1 }).map((_, i) => {
     const val = hasData ? Math.round(maxVal * (1 - i / steps)) : 0;
-    return `<span>â‚±${(val / 1000).toFixed(0)}k</span>`;
+    return `<span>₱${(val / 1000).toFixed(0)}k</span>`;
   }).join("");
 
   const base = document.createElementNS("http://www.w3.org/2000/svg","line");
@@ -647,7 +647,27 @@ function renderAllCharts(){
   renderInvoiceTrendChart();
 }
 
+const financeDashboard = @json($financeDashboard ?? []);
+
 requestAnimationFrame(() => {
+  const paid = Number(financeDashboard.paid || 0);
+  const unpaid = Number(financeDashboard.unpaid || 0);
+  const overdue = Number(financeDashboard.overdue || 0);
+  const invoiceTotal = Number(financeDashboard.invoice_total || 0);
+  const overduePct = invoiceTotal ? Math.round((overdue / invoiceTotal) * 100) : 0;
+  const paidPct = invoiceTotal ? Math.round((paid / invoiceTotal) * 100) : 0;
+
+  setCashFlowData(
+    paid,
+    financeDashboard.week_labels || [],
+    financeDashboard.invoice_values || [],
+    financeDashboard.paid_values || []
+  );
+  setProfitLossData(paid - unpaid, paid, 100, 0, 0);
+  setInvoicesData(unpaid, overdue, overduePct, paid, paid, paidPct);
+  setRevenueData(paid, 0, 'Paid invoice revenue', financeDashboard.week_labels || [], financeDashboard.paid_values || []);
+  setInvoiceTrendData(financeDashboard.week_labels || [], financeDashboard.invoice_values || [], financeDashboard.paid_values || []);
+  setActivityData(financeDashboard.recent_activity || []);
   renderCashFlow();
   renderExpenses();
   renderProfitLoss();

@@ -194,7 +194,7 @@ $selectedOrder = $workOrders[$selectedIndex] ?? $workOrders[0];
                             <p class="text-sm font-medium text-nexora-deep-navy">Send to QC Check</p>
                             <p class="text-xs text-nexora-navy-mid mt-0.5">Mark this finished build as ready for quality control.</p>
                         </div>
-                        <button onclick="sendToQC(); closeModal('edit-backdrop');"
+                        <button onclick="sendToQC()"
                                 class="flex-shrink-0 ml-4 px-4 py-1.5 rounded-full text-xs font-semibold bg-nexora-corporate text-white
                                     hover:bg-nexora-navy-mid transition-colors">
                             Send to QC

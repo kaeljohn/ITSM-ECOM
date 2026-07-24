@@ -13,7 +13,7 @@ protected $primaryKey   = 'id';
     public    $incrementing = false;
     protected $keyType      = 'string';
 
-    protected $fillable = ['id','name','specs','status','due','due_date','source','assigned','range'];
+    protected $fillable = ['id','name','specs','status','due','due_date','source','fulfillment_order_id','assigned','assigned_employee_id','range'];
 
     protected $casts = [
         'due_date' => 'date',

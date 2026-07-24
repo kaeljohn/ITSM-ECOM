@@ -120,7 +120,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/risk/analytics/export', [RiskAnalyticsController::class, 'export'])->name('risk.analytics.export');
     });
 
-    Route::get('/users', [UserController::class, 'employees'])->name('client.users.index');
+    Route::get('/users', [UserController::class, 'employees'])->name('users.index');
 });
 
 Route::get('/', function () {
@@ -131,7 +131,7 @@ Route::get('/', function () {
 
 Route::get('/users/index', function () {
     return view('users.index');
-})->name('users.legacy.index');
+})->name('users.index');
 
 Route::get('/users/roles', [RolesAndPermissionController::class, 'index'])
     ->name('users.roles');

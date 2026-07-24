@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>Nexora Returns</title>
 <style>
    :root {
@@ -46,26 +47,6 @@
     align-items:center;
     gap:14px;
     text-decoration:none;
-    color:inherit;
-    cursor:pointer;
-    transition:
-        transform .25s ease,
-        filter .25s ease;
-}
-
-.brand-logo:hover{
-    transform:scale(1.06);
-    filter:drop-shadow(0 8px 18px rgba(59,130,246,.45));
-}
-
-.brand-logo:active{
-    transform:scale(.96);
-}
-
-.brand-logo:visited,
-.brand-logo:link,
-.brand-logo:hover,
-.brand-logo:active{
     color:inherit;
 }
 
@@ -128,8 +109,46 @@
     overflow: hidden;
   }
 
-  .returns-queue { flex: 2.5; }
-  .side { flex: 1; display: flex; flex-direction: column; gap: 24px; }
+  .returns-queue {
+    flex: 2.5;
+    display: flex;
+    flex-direction: column;
+    height: 560px;
+  }
+  .activity {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 560px;
+  }
+
+  /* Scrollable body under the fixed panel header */
+  .table-scroll {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .table-scroll::-webkit-scrollbar {
+    width: 8px;
+  }
+  .table-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .table-scroll::-webkit-scrollbar-thumb {
+    background: var(--pill-border);
+    border-radius: 8px;
+  }
+  .table-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+  }
+
+  /* Keep column headers pinned while rows scroll */
+  .returns-queue thead th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-card);
+    z-index: 5;
+  }
 
   .panel-header {
     display: flex;
@@ -441,10 +460,28 @@
     margin-top: 2px;
   }
 
-  /* Return reasons / refund activity lists */
-  .reason-list, .refund-list { padding: 8px 0; }
+  /* Refund activity list */
+  .refund-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
 
-  .reason-item, .refund-item {
+  .refund-list::-webkit-scrollbar {
+    width: 8px;
+  }
+  .refund-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .refund-list::-webkit-scrollbar-thumb {
+    background: var(--pill-border);
+    border-radius: 8px;
+  }
+  .refund-list::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+  }
+
+  .refund-item {
     display: flex;
     align-items: center;
     gap: 14px;
@@ -453,9 +490,8 @@
     font-size: 14px;
   }
 
-  .reason-item:last-child, .refund-item:last-child { border-bottom: none; }
-  .reason-icon, .refund-icon { width: 18px; text-align: center; flex-shrink: 0; }
-  .refund-icon { color: #4ade80; }
+  .refund-item:last-child { border-bottom: none; }
+  .refund-icon { width: 18px; text-align: center; flex-shrink: 0; color: #4ade80; }
 
   /* ============================================
      Blur + modal mechanism
@@ -513,8 +549,33 @@
 
   .modal-body { padding: 20px 28px 0; }
   .modal-body .field-label { margin: 0 0 6px; font-size: 12px; color: #8ea3cc; }
+  .modal-body .field-label span { color: #6f89c2; font-weight: 400; }
   .modal-body .reason-title { margin: 0 0 10px; font-size: 16px; font-weight: 700; color: #fff; }
   .modal-body .reason-desc { margin: 0 0 20px; font-size: 14px; color: #b9c6e3; line-height: 1.5; }
+
+  .items-list {
+    list-style: none;
+    margin: 0 0 20px;
+    padding: 0;
+    max-height: 160px;
+    overflow-y: auto;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+  }
+
+  .items-list li {
+    padding: 10px 14px;
+    font-size: 14px;
+    color: #fff;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .items-list li:last-child { border-bottom: none; }
+
+  .items-list::-webkit-scrollbar { width: 8px; }
+  .items-list::-webkit-scrollbar-track { background: transparent; }
+  .items-list::-webkit-scrollbar-thumb { background: var(--pill-border); border-radius: 8px; }
+  .items-list::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
   .proof-row { display: flex; gap: 12px; margin-bottom: 20px; }
 
@@ -562,6 +623,96 @@
 
   .btn-accept { background: #16a34a; color: #eafff0; }
   .btn-accept:hover { background: #1bbf58; }
+
+  /* ===== Nav actions (links + profile grouped on the right) ===== */
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .nav-divider {
+    width: 1px;
+    height: 22px;
+    background: rgba(255,255,255,0.18);
+  }
+
+  /* ===== Profile menu ===== */
+  .profile-menu {
+    position: relative;
+  }
+
+  .profile-trigger {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-header);
+    padding: 0;
+  }
+
+  .profile-trigger img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .profile-trigger:hover {
+    border-color: rgba(255,255,255,0.35);
+  }
+
+  .profile-dropdown {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    background: var(--bg-header);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    min-width: 190px;
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+    z-index: 100;
+  }
+
+  .profile-dropdown.open {
+    display: flex;
+  }
+
+  .profile-dropdown a,
+  .profile-dropdown button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text-light);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .profile-dropdown a:hover,
+  .profile-dropdown button:hover {
+    background: rgba(255,255,255,0.08);
+  }
+
+  .profile-dropdown .divider {
+    height: 1px;
+    background: var(--border-soft);
+    margin: 4px 0;
+  }
 </style>
 </head>
 <body>
@@ -575,22 +726,35 @@
 
     <!-- Navbar -->
     <div class="navbar">
-      <form method="POST" action="{{ route('order-fulfillment.logout') }}" style="display:inline;">
-        @csrf
-        <button type="submit" class="brand brand-logo" style="background:none;border:none;padding:0;font:inherit;">
-          <img class="logo" src="{{ asset('orderfulfillment/logo/Nexora_Logo_Transparent.png') }}" alt="Nexora Logo">
-          <div class="brand-text">
-              <div class="title">NEXORA</div>
-              <div class="subtitle">ENTERPRISE RESOURCE PLANNING</div>
+      <div class="brand brand-logo">
+        <img class="logo" src="{{ asset('orderfulfillment/logo/Nexora_Logo_Transparent.png') }}" alt="Nexora Logo">
+        <div class="brand-text">
+            <div class="title">NEXORA</div>
+            <div class="subtitle">ENTERPRISE RESOURCE PLANNING</div>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <div class="nav-links">
+          <a href="{{ route('order-fulfillment.dashboard') }}">Dashboard</a>
+          <a href="{{ route('order-fulfillment.orders') }}">Orders</a>
+          <a href="{{ route('order-fulfillment.packing') }}">Packing</a>
+          <a href="{{ route('order-fulfillment.shipping') }}">Shipping</a>
+          <a href="{{ route('order-fulfillment.return') }}" class="active">Returns</a>
+        </div>
+        <div class="nav-divider"></div>
+        <div class="profile-menu" id="profileMenu">
+          <button type="button" class="profile-trigger" id="profileTrigger" aria-label="Account menu">
+            <img src="{{ asset('orderfulfillment/logo/pf.png') }}" alt="Profile">
+          </button>
+          <div class="profile-dropdown" id="profileDropdown">
+            <a href="{{ route('order-fulfillment.dashboard') }}">Employee Dashboard</a>
+            <div class="divider"></div>
+            <form method="POST" action="{{ route('order-fulfillment.logout') }}" style="margin:0;">
+              @csrf
+              <button type="submit">Log out</button>
+            </form>
           </div>
-        </button>
-      </form>
-      <div class="nav-links">
-        <a href="{{ route('order-fulfillment.dashboard') }}">Dashboard</a>
-        <a href="{{ route('order-fulfillment.orders') }}">Orders</a>
-        <a href="{{ route('order-fulfillment.packing') }}">Packing</a>
-        <a href="{{ route('order-fulfillment.shipping') }}">Shipping</a>
-        <a href="{{ route('order-fulfillment.return') }}" class="active">Returns</a>
+        </div>
       </div>
     </div>
 
@@ -612,7 +776,7 @@
   </div>
 
   <div class="stat-card">
-    <div class="label">Return rate (30 days)</div>
+    <div class="label">Return rate</div>
     <div class="value">0%</div>
   </div>
 
@@ -659,12 +823,13 @@
             </div>
           </div>
         </div>
+        <div class="table-scroll">
         <table>
           <thead>
             <tr>
               <th>Order Id</th>
               <th>Customer</th>
-              <th>Product</th>
+              <th>Items</th>
               <th>Reason</th>
               <th>Status</th>
               <th>Resolution</th>
@@ -685,7 +850,10 @@
 >
     <td class="order-id">{{ $return->order_id }}</td>
     <td class="customer">{{ $return->customer_name }}</td>
-    <td class="product">{{ $return->product_name }}</td>
+    <td class="product">
+        @php $itemCount = count(array_filter(array_map('trim', explode(',', $return->product_name)))); @endphp
+        {{ $itemCount }} {{ Str::plural('item', $itemCount) }}
+    </td>
     <td>{{ $return->reason }}</td>
 
     <td>
@@ -700,26 +868,14 @@
 
 </tbody>
         </table>
+        </div>
       </div>
 
-      <div class="side">
-        <div class="panel">
-          <div class="panel-header">
-            <div class="title">📊 Return reasons</div>
-          </div>
-          <div class="reason-list">
-            <div class="reason-item"><span class="reason-icon">⚠️</span><span>Defective — 0%</span></div>
-            <div class="reason-item"><span class="reason-icon">📦</span><span>Wrong item — 0%</span></div>
-            <div class="reason-item"><span class="reason-icon">👤</span><span>Changed mind — 0%</span></div>
-          </div>
+      <div class="panel activity">
+        <div class="panel-header">
+          <div class="title">📈 Refund activity</div>
         </div>
-
-        <div class="panel">
-          <div class="panel-header">
-            <div class="title">📈 Refund activity</div>
-          </div>
-          <div class="refund-list">
-          </div>
+        <div class="refund-list">
         </div>
       </div>
 
@@ -734,7 +890,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2>Return request <span id="modalOrderId">#ORD-4821</span></h2>
-        <p id="modalCustomerProduct">Maria Santos · Wireless Headphone</p>
+        <p id="modalCustomerProduct">Maria Santos</p>
       </div>
 
       <div class="modal-tags">
@@ -743,6 +899,9 @@
       </div>
 
       <div class="modal-body">
+        <p class="field-label">Items <span id="modalItemCount"></span></p>
+        <ul class="items-list" id="modalItemsList"></ul>
+
         <p class="field-label">Reason for return</p>
         <p class="reason-title" id="modalReasonTitle">Defective - item stopped working after 2 days</p>
         <p class="reason-desc" id="modalReasonDesc">Customer reports the left earcup lost audio and the device won't hold a charge. No visible external damage.</p>
@@ -765,7 +924,7 @@
 
       <div class="modal-footer">
         <button class="btn btn-close" onclick="closeReturnModal()">Close</button>
-        <button class="btn btn-accept" id="modalAcceptBtn" onclick="closeReturnModal()">Accept return</button>
+        <button class="btn btn-accept" id="modalAcceptBtn">Accept return</button>
       </div>
     </div>
   </div>
@@ -782,13 +941,36 @@
 // stock back to the warehouse — so the modal shows Close only, no Accept.
 const ADMIN_CANCEL_REASONS = ['Cancelled while shipping', 'Cancelled before shipping'];
 
+const acceptUrlTemplate = @json(route('order-fulfillment.returns.accept', ['id' => '__ID__']));
+const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+let currentReturnRow = null;
+
 function openReturnModal(row)
 {
+    currentReturnRow = row;
+
     document.getElementById('modalOrderId').textContent =
         row.dataset.orderId;
 
     document.getElementById('modalCustomerProduct').textContent =
-        row.dataset.customer + ' · ' + row.dataset.product;
+        row.dataset.customer;
+
+    const items = row.dataset.product
+        .split(',')
+        .map(function (item) { return item.trim(); })
+        .filter(Boolean);
+
+    document.getElementById('modalItemCount').textContent =
+        '(' + items.length + (items.length === 1 ? ' item)' : ' items)');
+
+    const itemsList = document.getElementById('modalItemsList');
+    itemsList.innerHTML = '';
+    items.forEach(function (item) {
+        const li = document.createElement('li');
+        li.textContent = item;
+        itemsList.appendChild(li);
+    });
 
     document.getElementById('modalPriority').textContent =
         row.dataset.status;
@@ -800,8 +982,10 @@ function openReturnModal(row)
         row.dataset.reason;
 
     const isAdminCancellation = ADMIN_CANCEL_REASONS.includes(row.dataset.reason);
-    document.getElementById('modalAcceptBtn').style.display =
-        isAdminCancellation ? 'none' : '';
+    const acceptBtn = document.getElementById('modalAcceptBtn');
+    acceptBtn.style.display = isAdminCancellation ? 'none' : '';
+    acceptBtn.disabled = row.dataset.status !== 'NEW';
+    acceptBtn.textContent = 'Accept return';
 
     document.getElementById('pageContent')
         .classList.add('blurred');
@@ -811,9 +995,55 @@ function openReturnModal(row)
 }
 
     function closeReturnModal() {
+      currentReturnRow = null;
       document.getElementById('pageContent').classList.remove('blurred');
       document.getElementById('returnOverlay').classList.remove('active');
     }
+
+    document.getElementById('modalAcceptBtn').addEventListener('click', function () {
+      if (!currentReturnRow) return;
+
+      const row = currentReturnRow;
+      const btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Accepting...';
+
+      const url = acceptUrlTemplate.replace('__ID__', encodeURIComponent(row.dataset.returnId));
+
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'Accept': 'application/json',
+        },
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          if (!result.ok || !result.data.success) {
+            throw new Error(result.data.message || 'Could not accept this return.');
+          }
+
+          row.dataset.status = result.data.status;
+          row.dataset.resolution = result.data.resolution;
+
+          const badge = row.querySelector('.status-badge');
+          if (badge) badge.textContent = result.data.status;
+
+          const resolutionCell = row.children[5];
+          if (resolutionCell) resolutionCell.textContent = result.data.resolution;
+
+          closeReturnModal();
+        })
+        .catch(function (err) {
+          alert(err.message);
+          btn.disabled = false;
+          btn.textContent = 'Accept return';
+        });
+    });
 
     /* ===================== Search + Filter (working) ===================== */
     const returnRows     = Array.from(document.querySelectorAll('.return-row'));
@@ -886,6 +1116,30 @@ function openReturnModal(row)
 
     searchInput.addEventListener('input', applyReturnFilters);
     /* =================== end Search + Filter =================== */
+  </script>
+
+  <script>
+    (function () {
+      const menu = document.getElementById('profileMenu');
+      const trigger = document.getElementById('profileTrigger');
+      const dropdown = document.getElementById('profileDropdown');
+      if (!menu || !trigger || !dropdown) return;
+
+      trigger.addEventListener('click', function (e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!menu.contains(e.target)) {
+          dropdown.classList.remove('open');
+        }
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') dropdown.classList.remove('open');
+      });
+    })();
   </script>
 
 </body>

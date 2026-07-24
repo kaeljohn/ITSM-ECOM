@@ -47,26 +47,6 @@
     gap:14px;
     text-decoration:none;
     color:inherit;
-    cursor:pointer;
-    transition:
-        transform .25s ease,
-        filter .25s ease;
-}
-
-.brand-logo:hover{
-    transform:scale(1.06);
-    filter:drop-shadow(0 8px 18px rgba(59,130,246,.45));
-}
-
-.brand-logo:active{
-    transform:scale(.96);
-}
-
-.brand-logo:visited,
-.brand-logo:link,
-.brand-logo:hover,
-.brand-logo:active{
-    color:inherit;
 }
 
 .brand-logo .title{
@@ -743,6 +723,96 @@
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+
+  /* ===== Nav actions (links + profile grouped on the right) ===== */
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .nav-divider {
+    width: 1px;
+    height: 22px;
+    background: rgba(255,255,255,0.18);
+  }
+
+  /* ===== Profile menu ===== */
+  .profile-menu {
+    position: relative;
+  }
+
+  .profile-trigger {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-header);
+    padding: 0;
+  }
+
+  .profile-trigger img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .profile-trigger:hover {
+    border-color: rgba(255,255,255,0.35);
+  }
+
+  .profile-dropdown {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    background: var(--bg-header);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    min-width: 190px;
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+    z-index: 100;
+  }
+
+  .profile-dropdown.open {
+    display: flex;
+  }
+
+  .profile-dropdown a,
+  .profile-dropdown button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text-light);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .profile-dropdown a:hover,
+  .profile-dropdown button:hover {
+    background: rgba(255,255,255,0.08);
+  }
+
+  .profile-dropdown .divider {
+    height: 1px;
+    background: var(--border-soft);
+    margin: 4px 0;
+  }
 </style>
 </head>
 <body>
@@ -758,37 +828,50 @@
 
     <!-- Navbar -->
     <div class="navbar">
-      <form method="POST" action="{{ route('order-fulfillment.logout') }}" style="display:inline;">
-        @csrf
-        <button type="submit" class="brand brand-logo" style="background:none;border:none;padding:0;font:inherit;">
-          <img class="logo" src="{{ asset('orderfulfillment/logo/Nexora_Logo_Transparent.png') }}" alt="Nexora Logo">
-          <div class="brand-text">
-              <div class="title">NEXORA</div>
-              <div class="subtitle">ENTERPRISE RESOURCE PLANNING</div>
+      <div class="brand brand-logo">
+        <img class="logo" src="{{ asset('orderfulfillment/logo/Nexora_Logo_Transparent.png') }}" alt="Nexora Logo">
+        <div class="brand-text">
+            <div class="title">NEXORA</div>
+            <div class="subtitle">ENTERPRISE RESOURCE PLANNING</div>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <div class="nav-links">
+          <a href="{{ route('order-fulfillment.dashboard') }}">Dashboard</a>
+          <a href="{{ route('order-fulfillment.orders') }}">Orders</a>
+          <a href="{{ route('order-fulfillment.packing') }}">Packing</a>
+          <a href="{{ route('order-fulfillment.shipping') }}" class="active">Shipping</a>
+          <a href="{{ route('order-fulfillment.return') }}">Returns</a>
+        </div>
+        <div class="nav-divider"></div>
+        <div class="profile-menu" id="profileMenu">
+          <button type="button" class="profile-trigger" id="profileTrigger" aria-label="Account menu">
+            <img src="{{ asset('orderfulfillment/logo/pf.png') }}" alt="Profile">
+          </button>
+          <div class="profile-dropdown" id="profileDropdown">
+            <a href="{{ route('order-fulfillment.dashboard') }}">Employee Dashboard</a>
+            <div class="divider"></div>
+            <form method="POST" action="{{ route('order-fulfillment.logout') }}" style="margin:0;">
+              @csrf
+              <button type="submit">Log out</button>
+            </form>
           </div>
-        </button>
-      </form>
-      <div class="nav-links">
-        <a href="{{ route('order-fulfillment.dashboard') }}">Dashboard</a>
-        <a href="{{ route('order-fulfillment.orders') }}">Orders</a>
-        <a href="{{ route('order-fulfillment.packing') }}">Packing</a>
-        <a href="{{ route('order-fulfillment.shipping') }}" class="active">Shipping</a>
-        <a href="{{ route('order-fulfillment.return') }}">Returns</a>
+        </div>
       </div>
     </div>
 
     <!-- Stats -->
     <div class="stats-row">
       <div class="stat-card">
-        <div class="label">Shipped today</div>
-        <div class="value">{{ $shippedToday }}</div>
+        <div class="label">In shipping</div>
+        <div class="value">{{ $inShipping }}</div>
       </div>
       <div class="stat-card">
         <div class="label">In transit</div>
         <div class="value">{{ $inTransit }}</div>
       </div>
       <div class="stat-card">
-        <div class="label">On time delivery rate</div>
+        <div class="label">Delivery rate</div>
         <div class="value">{{ $onTimeRate }}%</div>
       </div>
       <div class="stat-card">
@@ -964,10 +1047,6 @@
           <span class="status-pill tag-packing" id="modalStatus">—</span>
         </div>
         <div>
-          <p class="field-label">Items</p>
-          <p class="field-value" id="modalItem">—</p>
-        </div>
-        <div>
           <p class="field-label">Tracing no.</p>
           <p class="field-value" id="modalTracking">—</p>
         </div>
@@ -976,14 +1055,10 @@
           <p class="field-value" id="modalCourier">—</p>
         </div>
         <div>
-          <p class="field-label">Amount</p>
-          <p class="field-value" id="modalAmount">—</p>
-        </div>
-        <div>
           <p class="field-label">Due date</p>
           <p class="field-value" id="modalDue">—</p>
         </div>
-        <div style="grid-column: 1 / -1;">
+        <div>
           <p class="field-label">Delivery Address</p>
           <p class="field-value" id="modalAddress">—</p>
         </div>
@@ -1060,11 +1135,14 @@
 
   <script>
 
-    // Base URL for the shipping endpoints, resolved server-side so it
-    // works no matter where this app is actually mounted (e.g. served
-    // from a subfolder like /dashboard/OrderFullfillment/public rather
-    // than the domain root).
-    const SHIPPING_BASE_URL = "{{ url('/shipping') }}";
+    // Base URL for the shipping endpoints. Built from the *named* shipping
+    // route (the same one the "Shipping" nav link above resolves through)
+    // rather than a hardcoded "/shipping" path, so it works no matter where
+    // this app is actually mounted/prefixed (e.g. served from a subfolder,
+    // or behind a module prefix like /order-fulfillment/shipping rather
+    // than the domain root). A hardcoded path silently drifted out of sync
+    // with the real route and caused "Could not load drivers" 404s.
+    const SHIPPING_BASE_URL = "{{ rtrim(route('order-fulfillment.shipping'), '/') }}";
 
     const orders = @json($shipments->keyBy('shipment_id'));
     const statusLabels = {
@@ -1143,8 +1221,6 @@
       if (order) {
         document.getElementById('modalOrderId').textContent = orderId;
         document.getElementById('modalCustomer').textContent = order.customer_name;
-        const itemCount = order.items_count ?? (order.items ? order.items.length : 0);
-        document.getElementById('modalItem').textContent = itemCount + (itemCount === 1 ? ' item' : ' items');
         document.getElementById('modalTracking').textContent = order.tracking_number;
         const modalStatusEl = document.getElementById('modalStatus');
         modalStatusEl.textContent = statusLabels[order.status] || order.status;
@@ -1153,12 +1229,6 @@
         document.getElementById('modalCourier').textContent = order.courier;
         document.getElementById('modalDue').textContent = order.due_date;
         document.getElementById('modalAddress').textContent = order.address;
-
-        // The shipments table's amount column isn't populated (defaults to
-        // 0), so the real total comes from summing the order's line items —
-        // same figure used for the "Total amount" row in the items section.
-        const itemsTotal = (order.items || []).reduce((sum, it) => sum + (Number(it.line_total) || 0), 0);
-        document.getElementById('modalAmount').textContent = formatCurrency(itemsTotal);
 
         renderOrderItems(order, 'modalItemsList', 'modalItemsBadge', 'modalItemsTotal');
       }
@@ -1533,6 +1603,30 @@
 
     searchInput.addEventListener('input', applyShippingFilters);
     /* =================== end Search + Filter =================== */
+  </script>
+
+  <script>
+    (function () {
+      const menu = document.getElementById('profileMenu');
+      const trigger = document.getElementById('profileTrigger');
+      const dropdown = document.getElementById('profileDropdown');
+      if (!menu || !trigger || !dropdown) return;
+
+      trigger.addEventListener('click', function (e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!menu.contains(e.target)) {
+          dropdown.classList.remove('open');
+        }
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') dropdown.classList.remove('open');
+      });
+    })();
   </script>
 
 </body>

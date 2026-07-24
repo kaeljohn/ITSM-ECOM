@@ -3,10 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use Modules\BusinessIntelligence\Http\Controllers\BusinessIntelligenceController;
 
-/*
- * BI is mounted by its service provider beneath /bi.  It deliberately owns
- * only names prefixed with `bi.`; the shared ITSM login route remains `login`.
- */
 Route::get('/', fn () => redirect()->route('bi.dashboard'));
 
 Route::middleware('bi.access')->name('bi.')->group(function (): void {

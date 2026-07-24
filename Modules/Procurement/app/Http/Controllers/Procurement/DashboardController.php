@@ -32,7 +32,7 @@ class DashboardController extends Controller
             ->toArray();
 
         $supplierCount = $table('suppliers')->where('status', 'active')->count();
-        $requisitionCount = $table('requisitions')->count();
+        $requisitionCount = $this->pendingRequisitionCount($clientId, $rootTesting);
         $deliveryCount = $table('deliveries')->count();
         $pendingDeliveries = $table('deliveries')
             ->whereIn('status', ['pending', 'scheduled', 'intransit'])
@@ -100,5 +100,35 @@ class DashboardController extends Controller
             'topSuppliers' => $topSuppliers,
             'lowStockAlerts' => collect(),
         ]);
+    }
+
+    private function pendingRequisitionCount(int $clientId, bool $rootTesting): int
+    {
+        $count = 0;
+
+        foreach (['order_fulfillment', 'manufacturing'] as $connectionName) {
+            try {
+                $connection = DB::connection($connectionName);
+                $schema = $connection->getSchemaBuilder();
+                if (! $schema->hasTable('requisitions')) {
+                    continue;
+                }
+
+                $query = $connection->table('requisitions');
+                if (! $rootTesting && $schema->hasColumn('requisitions', 'client_id')) {
+                    $query->where('client_id', $clientId);
+                }
+
+                if ($schema->hasColumn('requisitions', 'status')) {
+                    $query->whereRaw('LOWER(status) = ?', ['pending']);
+                }
+
+                $count += $query->count();
+            } catch (\Exception $e) {
+                // A temporarily unavailable module must not take down the Procurement dashboard.
+            }
+        }
+
+        return $count;
     }
 }

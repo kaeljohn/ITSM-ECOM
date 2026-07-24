@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -25,8 +25,8 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
         <div>
           <p class="text-sm text-muted mb-1">Sales</p>
           <div class="flex items-center gap-2">
-            <span class="text-3xl font-bold" id="salesTotal">â‚±0</span>
-            <span class="text-xs font-semibold rounded-full px-2 py-0.5 bg-emerald-500/20 text-emerald-400" id="salesChangeBadge">â†‘0%</span>
+            <span class="text-3xl font-bold" id="salesTotal">₱0</span>
+            <span class="text-xs font-semibold rounded-full px-2 py-0.5 bg-emerald-500/20 text-emerald-400" id="salesChangeBadge">↑0%</span>
           </div>
           <p class="text-muted text-xs mt-1" id="salesChangeSub"></p>
         </div>
@@ -51,7 +51,7 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
     <div class="space-y-3">
       <div class="bg-navy-700 rounded-lg p-4 flex items-center justify-between">
         <span class="text-sm text-muted">Total Sales</span>
-        <span class="text-lg font-bold" id="totalSalesSidebar">â‚±0</span>
+        <span class="text-lg font-bold" id="totalSalesSidebar">₱0</span>
       </div>
       <div id="topProductsList" class="space-y-3 min-h-[220px]"></div>
     </div>
@@ -83,16 +83,20 @@ document.addEventListener("click", (e) => {
   if (!e.target.closest(".dd-menu") && !e.target.closest(".dd-toggle")) closeAllMenus();
 });
 
-function fmtPeso(n){ 
+function fmtPeso(n){
   if (typeof n !== 'number' || isNaN(n) || n < 0) n = 0;
-  return "â‚±" + Math.round(n).toLocaleString(); 
+  return "₱" + Math.round(n).toLocaleString();
 }
 
 let salesData = {
-  summary: { total: 0, changePct: 0, changeSub: "" },
+  summary: {
+    total: Number(@json($totalSales ?? 0)),
+    changePct: 0,
+    changeSub: ""
+  },
   range: "This week",
   trend: { months: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"], series: [] },
-  totalSalesSidebar: 0,
+  totalSalesSidebar: Number(@json($totalSales ?? 0)),
   topProducts: [],
   revenueStreams: []
 };
@@ -102,7 +106,7 @@ function setSalesData(data) {
     console.warn('Invalid sales data received');
     return;
   }
-  
+
   if (data.summary) {
     setSalesSummary(
       data.summary.total,
@@ -110,32 +114,33 @@ function setSalesData(data) {
       data.summary.changeSub
     );
   }
-  
+
   if (data.trend) {
     setSalesTrendData(
       data.trend.months || getSalesLabelsForRange(salesData.range),
       data.trend.series || []
     );
   }
-  
+
   if (data.totalSalesSidebar !== undefined) {
     setTotalSalesSidebar(data.totalSalesSidebar);
   }
-  
+
   if (data.topProducts) {
     setTopProducts(data.topProducts);
   }
-  
+
   if (data.revenueStreams) {
     setRevenueStreamData(data.revenueStreams);
   }
+  renderSalesSummary();
 }
 
 function setSalesSummary(total, changePct, changeSub){
-  salesData.summary = { 
+  salesData.summary = {
     total: typeof total === 'number' && !isNaN(total) && total >= 0 ? total : 0,
     changePct: typeof changePct === 'number' && !isNaN(changePct) ? changePct : 0,
-    changeSub: changeSub || '' 
+    changeSub: changeSub || ''
   };
   renderSalesSummary();
 }
@@ -145,7 +150,7 @@ function renderSalesSummary(){
   document.getElementById("salesTotal").textContent = fmtPeso(d.total);
   const badge = document.getElementById("salesChangeBadge");
   const up = d.changePct >= 0;
-  badge.textContent = `${up ? "â†‘" : "â†“"}${Math.abs(d.changePct).toFixed(1)}%`;
+  badge.textContent = `${up ? "↑" : "↓"}${Math.abs(d.changePct).toFixed(1)}%`;
   badge.className = `text-xs font-semibold rounded-full px-2 py-0.5 ${up ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`;
   document.getElementById("salesChangeSub").textContent = d.changeSub || 'No change from previous period';
 }
@@ -160,10 +165,10 @@ function getSalesLabelsForRange(range){
 function selectSalesRange(range){
   salesData.range = range;
   document.getElementById("salesRangeLabel").textContent = range;
-  
+
   const newMonths = getSalesLabelsForRange(range);
   const currentSeries = salesData.trend.series;
-  
+
   salesData.trend.months = newMonths;
 
   if (currentSeries.length > 0) {
@@ -172,21 +177,21 @@ function selectSalesRange(range){
       values: Array(newMonths.length).fill(0)
     }));
   } else {
-    salesData.trend.series = [{ 
-      label: 'Sales', 
-      color: '#4ca6ff', 
-      values: Array(newMonths.length).fill(0) 
+    salesData.trend.series = [{
+      label: 'Sales',
+      color: '#4ca6ff',
+      values: Array(newMonths.length).fill(0)
     }];
   }
-  
+
   closeAllMenus();
   renderSalesChart();
 }
 
 function setSalesTrendData(months, series){
   const newMonths = Array.isArray(months) && months.length > 0 ? months : getSalesLabelsForRange(salesData.range);
-  
-  salesData.trend = { 
+
+  salesData.trend = {
     months: newMonths,
     series: Array.isArray(series) && series.length > 0 ? series.map(s => ({
       label: s.label || 'Sales',
@@ -210,7 +215,7 @@ function renderSalesChart(){
   const { months, series } = salesData.trend;
   const padX = 4, padTop = 10, padBottom = 26;
   const plotH = h - padTop - padBottom;
-  
+
   const allValues = series.flatMap(s => s.values).filter(v => v > 0);
   const maxVal = allValues.length > 0 ? Math.max(...allValues) * 1.15 : 1000;
 
@@ -283,7 +288,7 @@ function renderTopProducts(){
     list.innerHTML = `
       <div class="bg-navy-700 rounded-lg p-4 flex items-center justify-between">
         <span class="text-sm text-muted">No products yet</span>
-        <span class="text-sm font-medium text-muted">â‚±0</span>
+        <span class="text-sm font-medium text-muted">₱0</span>
       </div>`;
     return;
   }
@@ -305,7 +310,7 @@ function setRevenueStreamData(streams){
 function renderRevenueStreams(){
   const streams = salesData.revenueStreams;
   const list = document.getElementById("revenueStreamList");
-  
+
   const total = streams.reduce((s, r) => s + r.value, 0);
   const rows = streams.length > 0 ? streams.map(r => `
     <div class="flex items-center justify-between bg-navy-700/40 border border-blue-400/30 rounded-lg px-4 py-3">
@@ -314,7 +319,7 @@ function renderRevenueStreams(){
     </div>`).join("") : `
     <div class="flex items-center justify-between bg-navy-700/40 border border-blue-400/30 rounded-lg px-4 py-3">
       <span class="text-blue-400 font-medium text-sm">No revenue streams</span>
-      <span class="text-sm font-semibold">â‚±0</span>
+      <span class="text-sm font-semibold">₱0</span>
     </div>`;
 
   list.innerHTML = rows + `

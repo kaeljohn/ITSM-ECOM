@@ -12,27 +12,87 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
+/**
+ * Signals that a material ran out of stock between the pre-check and the
+ * locked re-check inside processOrder(). Deliberately its own class (not a
+ * bare \RuntimeException) because Laravel's QueryException extends
+ * PDOException extends \RuntimeException — catching \RuntimeException
+ * directly would also swallow unrelated DB errors and misreport them as
+ * "insufficient_stock", leaking raw SQL text to the client.
+ */
+class InsufficientStockException extends \RuntimeException
+{
+    public function __construct(public readonly string $material)
+    {
+        parent::__construct("Insufficient stock: {$material}");
+    }
+}
+
 class PackingController extends Controller
 {
 
     private const INVENTORY_CONN = 'inventory';
 
+    /**
+     * The order-fulfillment module uses its own database connection.  Schema
+     * checks must use that connection too; otherwise a table present only in
+     * the ITSM database can make this module issue queries against a table
+     * that does not exist in the fulfillment database.
+     */
+    private function fulfillmentSchema()
+    {
+        return Schema::connection('order_fulfillment');
+    }
+
+    private function packingMaterialQuery()
+    {
+        return PackingMaterial::query()
+            ->where('client_id', (int) session('employee_client_id'));
+    }
+
+    private function findPackingMaterial(string $materialName)
+    {
+        $variants = match (strtolower(trim($materialName))) {
+            'silica gel packs' => ['silica gel packs', 'silica gel', 'silica gels'],
+            'foam inserts' => ['foam inserts', 'foam insert'],
+            'bubble wrap' => ['bubble wrap', 'bubble wraps'],
+            'packing tape' => ['packing tape', 'packing tapes'],
+            'fragile tape' => ['fragile tape', 'fragile tapes'],
+            default => [strtolower(trim($materialName))],
+        };
+
+        return $this->packingMaterialQuery()
+            ->where(function ($query) use ($materialName, $variants) {
+                $query->where(function ($nameQuery) use ($variants) {
+                    foreach ($variants as $index => $variant) {
+                        $method = $index === 0 ? 'whereRaw' : 'orWhereRaw';
+                        $nameQuery->{$method}('LOWER(name) = ?', [$variant]);
+                    }
+                })
+                    ->orWhereRaw('LOWER(box_size) = LOWER(?)', [$materialName]);
+            });
+    }
+
     public function index()
     {
         $packingOrders = Order::where('status', 'PACKING')
-            ->when(Schema::hasTable('order_items'), fn ($q) => $q->with('items'))
+            ->when($this->fulfillmentSchema()->hasTable('order_items'), fn ($q) => $q->with('items'))
             ->get();
 
         $inPackingCount = $packingOrders->count();
-        $ShippedCount   = Order::where('status', 'SHIPPED')->count();
+        // Every non-delivered shipping status — dispatched but not yet
+        // delivered (or delayed en route). Previously this only counted
+        // literal status == 'SHIPPED', undercounting anything sitting in
+        // READY_TO_SHIP, OUT_FOR_DELIVERY, or DELAYED.
+        $ShippedCount   = Order::whereIn('status', ['READY_TO_SHIP', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELAYED'])->count();
 
 
-        $packingError = Schema::hasTable('packing_errors')
+        $packingError = $this->fulfillmentSchema()->hasTable('packing_errors')
             ? PackingError::count()
             : 0;
 
         $materials = Schema::connection(self::INVENTORY_CONN)->hasTable('packing_materials')
-            ? PackingMaterial::all()
+            ? $this->packingMaterialQuery()->get()
             : collect();
 
         $lowStockMaterialCount = $materials->filter(function ($m) {
@@ -97,6 +157,30 @@ class PackingController extends Controller
             ], 404);
         }
 
+        // Atomically claim this order for processing. This is the actual
+        // duplicate-shipment guard: a plain "does the order exist" check is
+        // not enough, because two near-simultaneous requests for the same
+        // order (double-click, retried request, two open tabs, etc.) would
+        // both pass that check and each go on to create their own Shipment
+        // row. The WHERE clause below only flips PACKING -> PROCESSING for
+        // whichever request's UPDATE reaches the row first; the database
+        // (not PHP) is what makes this atomic, so it's safe even under
+        // real concurrency, not just against a slow frontend.
+        //
+        // If $claimed is 0, either another request already claimed this
+        // order, or it was already shipped/otherwise not in PACKING — either
+        // way we must not proceed.
+        $claimed = Order::where('id', $order->id)
+            ->where('status', 'PACKING')
+            ->update(['status' => 'PROCESSING']);
+
+        if ($claimed === 0) {
+            return response()->json([
+                'success' => false,
+                'error'   => 'already_processed',
+            ], 409);
+        }
+
         // Everything below is wrapped in a top-level try/catch. If ANYTHING
         // unexpected throws here (type errors, DB errors, etc.), we still
         // want to return JSON — never let an exception fall through to
@@ -127,10 +211,11 @@ class PackingController extends Controller
             //    "inventory" Neon database, so this read goes through that
             //    connection.
             foreach ($requiredMaterials as $materialName) {
-                $row = PackingMaterial::where('name', $materialName)->first();
+                $row = $this->findPackingMaterial($materialName)->first();
 
                 if (!$row || $row->stock_qty <= 0) {
                     $this->logPackingError((string) $order->id, $materialName, $row ? 'out_of_stock' : 'material_not_found');
+                    $this->revertOrderClaim($order);
 
                     return response()->json([
                         'success'  => false,
@@ -146,20 +231,20 @@ class PackingController extends Controller
             //    to guard against a race between the pre-check above and now.
             DB::connection(self::INVENTORY_CONN)->transaction(function () use ($requiredMaterials) {
                 foreach ($requiredMaterials as $materialName) {
-                    $row = PackingMaterial::where('name', $materialName)
+                    $row = $this->findPackingMaterial($materialName)
                         ->lockForUpdate()
                         ->first();
 
                     if (!$row || $row->stock_qty <= 0) {
                         // Throw so this transaction rolls back cleanly; we log
                         // the error AFTER the transaction exits (see catch below).
-                        throw new \RuntimeException('INSUFFICIENT_STOCK::' . $materialName);
+                        throw new InsufficientStockException($materialName);
                     }
                 }
 
                 // All materials confirmed in stock — safe to decrement.
                 foreach ($requiredMaterials as $materialName) {
-                    PackingMaterial::where('name', $materialName)->decrement('stock_qty', 1);
+                    $this->findPackingMaterial($materialName)->decrement('stock_qty', 1);
                 }
             });
 
@@ -167,18 +252,32 @@ class PackingController extends Controller
             //    Create the shipment + update the order on the default DB.
             //    If anything here fails, we must give the materials back.
             try {
-                $result = DB::transaction(function () use ($validated, $order, $id) {
+                $result = DB::connection('order_fulfillment')->transaction(function () use ($validated, $order, $id) {
 
                     $trackingNumber = strtoupper($validated['courier']) . '-' . time();
                     $shipmentId = $this->generateUniqueShipmentId();
+
+                    // Multi-item orders don't populate qty/product_amount on
+                    // the order row itself — those only live on order_items.
+                    // Use the same resolution logic as buildOrderItems() so
+                    // we never insert a null qty into shipments (NOT NULL).
+                    if (! $order->relationLoaded('items')) {
+                        $order->load('items');
+                    }
+                    $items = $this->buildOrderItems($order);
+                    $totalQty = max(1, (int) $items->sum('qty'));
+                    $totalAmount = $items->sum('amount_raw');
+                    $productName = $items->count() > 1
+                        ? $items->pluck('name')->implode(', ')
+                        : (string) ($items->first()['name'] ?? 'Order items');
 
                     Shipment::create([
                         'shipment_id'     => $shipmentId,
                         'order_id'        => $order->id,
                         'customer_name'   => $order->customer_name,
-                        'product_name'    => $order->product_name,
-                        'qty'             => $order->qty,
-                        'amount'          => $order->product_amount * $order->qty,
+                        'product_name'    => $productName,
+                        'qty'             => $totalQty,
+                        'amount'          => $totalAmount,
                         'courier'         => $validated['courier'],
                         'box_used'        => $validated['box'],
                         'tracking_number' => $trackingNumber,
@@ -202,20 +301,22 @@ class PackingController extends Controller
                 $this->restoreMaterialStock($requiredMaterials);
                 throw $e;
             }
-        } catch (\RuntimeException $e) {
+        } catch (InsufficientStockException $e) {
             // Stock ran out between the pre-check and the locked re-check
             // (race condition). The inventory transaction has already rolled
             // back cleanly at this point, so it's safe to log now.
-            $materialName = str_replace('INSUFFICIENT_STOCK::', '', $e->getMessage());
-            $this->logPackingError((string) $order->id, $materialName, 'out_of_stock');
+            $this->logPackingError((string) $order->id, $e->material, 'out_of_stock');
+            $this->revertOrderClaim($order);
 
             return response()->json([
                 'success'  => false,
                 'error'    => 'insufficient_stock',
-                'material' => $materialName,
+                'material' => $e->material,
             ], 422);
         } catch (\Throwable $e) {
             report($e);
+            $this->revertOrderClaim($order);
+
             return response()->json([
                 'success' => false,
                 'error'   => 'processing_failed',
@@ -223,6 +324,23 @@ class PackingController extends Controller
         }
 
         return response()->json($result, 200);
+    }
+
+    /**
+     * Release the PROCESSING claim taken in processOrder() back to PACKING
+     * when a request fails after claiming the order. Without this, an order
+     * that hits insufficient stock (or any other error) would be stuck in
+     * PROCESSING forever and could never be retried, since only orders with
+     * status PACKING can be claimed.
+     *
+     * Only reverts if the order is still PROCESSING — if some other request
+     * already moved it further (e.g. to SHIPPED), this must not stomp on it.
+     */
+    private function revertOrderClaim(Order $order): void
+    {
+        Order::where('id', $order->id)
+            ->where('status', 'PROCESSING')
+            ->update(['status' => 'PACKING']);
     }
 
     /**
@@ -235,7 +353,7 @@ class PackingController extends Controller
         try {
             DB::connection(self::INVENTORY_CONN)->transaction(function () use ($requiredMaterials) {
                 foreach ($requiredMaterials as $materialName) {
-                    PackingMaterial::where('name', $materialName)->increment('stock_qty', 1);
+                    $this->findPackingMaterial($materialName)->increment('stock_qty', 1);
                 }
             });
         } catch (\Throwable $e) {
@@ -254,7 +372,7 @@ class PackingController extends Controller
      */
     private function logPackingError(string $orderId, string $material, string $reason): void
     {
-        if (!Schema::hasTable('packing_errors')) {
+        if (! $this->fulfillmentSchema()->hasTable('packing_errors')) {
             \Illuminate\Support\Facades\Log::warning('packing_errors table missing — could not log packing error', [
                 'order_id' => $orderId,
                 'material' => $material,
@@ -285,7 +403,7 @@ class PackingController extends Controller
      */
     private function buildOrderItems(Order $order)
     {
-        if (Schema::hasTable('order_items') && $order->relationLoaded('items') && $order->items->isNotEmpty()) {
+        if ($this->fulfillmentSchema()->hasTable('order_items') && $order->relationLoaded('items') && $order->items->isNotEmpty()) {
             return $order->items->map(function ($item) {
                 $rawAmount = $item->qty * $item->product_amount;
 
@@ -298,11 +416,16 @@ class PackingController extends Controller
             })->values();
         }
 
-        $rawAmount = $order->product_amount * $order->qty;
+        // Legacy e-commerce orders only stored the customer and shipping
+        // details. They may not have product_name, qty, or product_amount
+        // columns, so never read those attributes directly here.
+        $qty = max(1, (int) ($order->getAttribute('qty') ?? 1));
+        $productName = (string) ($order->getAttribute('product_name') ?? 'Order items');
+        $rawAmount = (float) ($order->getAttribute('product_amount') ?? 0) * $qty;
 
         return collect([[
-            'name'       => $order->product_name,
-            'qty'        => $order->qty,
+            'name'       => $productName,
+            'qty'        => $qty,
             'amount'     => number_format($rawAmount, 2),
             'amount_raw' => $rawAmount,
         ]]);

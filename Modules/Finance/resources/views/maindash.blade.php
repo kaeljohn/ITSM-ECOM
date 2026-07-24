@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nexora Finance and Accounting</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    
+
     <style>
         * {
             margin: 0;
@@ -29,18 +29,18 @@
             background: #0B1E3D;
             display: flex;
             align-items: center;
-            justify-content: space-between; 
+            justify-content: space-between;
             z-index: 100;
             width: 100%;
             border-bottom: 2px solid #1B3A6B;
         }
-        
+
         /* LEFT LOGO */
         .nexora-logo {
             display: block;
-            margin: 16px 0 16px 16px; 
+            margin: 16px 0 16px 16px;
 
-            height: 96px; 
+            height: 96px;
             transition: .3s ease;
         }
 
@@ -82,7 +82,7 @@
             background:none;
             border:none;
             text-align:left;
-            font-size:20px; 
+            font-size:20px;
             font-family:'Inter', sans-serif;
             cursor:pointer;
             transition:.2s;
@@ -102,7 +102,7 @@
         .user-menu.open .dropdown-menu{
             display:block;
         }
-        
+
 
 
 /*==========================
@@ -240,11 +240,11 @@
 
         .dash-icon{
             width: 30px !important;
-            height: 30px !important;  
+            height: 30px !important;
             color: #1659A0;
-            transition: 0.1s ease;  
+            transition: 0.1s ease;
         }
-        
+
         /* USER MENU */
         .user-menu{
             position: relative;
@@ -280,7 +280,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        
+
     </style>
 </head>
 
@@ -290,34 +290,34 @@
     <div id="splash">
         <div class="circle"></div>
         <div class="brand">
-            <img src="{{asset('finance/images/Nexora_Logo_Transparent.png')}}" class="logo" alt="Logo">
-            <img src="{{asset('finance/images/Banner Name White.png')}}" class="banner" alt="Banner">
+            <img src="{{asset('images/Nexora_Logo_Transparent.png')}}" class="logo" alt="Logo">
+            <img src="{{asset('images/Banner Name White.png')}}" class="banner" alt="Banner">
         </div>
     </div>
 
         <!-- Top Navigation -->
         <header class="header">
-            <a href="{{ route('login') }}" class="nexora-logo" id="headerLogoBtn">
-                <img src="{{asset('finance/images/Banner Transparent.png')}}" alt="Nexora Logo">
+            <a href="" class="nexora-logo" id="headerLogoBtn">
+                <img src="{{asset('images/Banner Transparent.png')}}" alt="Nexora Logo">
             </a>
-           
+
         <!-- TOP RIGHT MENU USER -->
     <div class="user-menu">
-    <span aria-hidden="true"></span>
+    <x-heroicon-s-user-circle class="user-icon" />
 
     <div class="dropdown-menu">
         <a href="">Settings</a>
 
         <hr>
                                     <!--USE POST INSTEAD OF GET FOR SECURITY????-->
-        <form action="{{ route('login') }}" method="GET">
+        <form action="" method="GET">
             @csrf
             <button type="submit">Log Out</button>
         </form>
     </div>
     </div>
 </header>
-        
+
 
 <script>
     const SPLASH_DURATION = 4300;
@@ -331,8 +331,8 @@
 
     // 2. Smooth, fast fade-out for exiting the page
     function smoothExit(e, url) {
-        e.preventDefault(); 
-        
+        e.preventDefault();
+
         // Create a quick white fade overlay
         const fader = document.createElement('div');
         fader.style.position = 'fixed';
@@ -350,12 +350,12 @@
         // Redirect quickly after the screen goes white
         setTimeout(() => {
             window.location.href = url;
-        }, 400); 
+        }, 400);
     }
 
     // Attach the new smooth exit to your links
     // (Note: This checks if the buttons exist first, so it works safely on both pages)
-    
+
     const userMenu = document.querySelector(".user-menu");
 
 if (userMenu) {
@@ -385,7 +385,7 @@ function changePage(element, page) {
     // Load page into iframe (if using one)
     document.getElementById("contentFrame").src = page;
 }
-    
+
 </script>
 
 <div class="container">
@@ -393,25 +393,25 @@ function changePage(element, page) {
     <!-- Sidebar -->
     <aside class="sidebar">
         <ul class="menu">
-            <li id="dashboardBtn" class="active" onclick="changePage(this, '{{ route('finance.overview') }}')"><span aria-hidden="true"></span><span>Dashboard</span></li>
-            <li  onclick="changePage(this, '{{ route('finance.invoices') }}')"><span aria-hidden="true"></span><span>Invoice</span></li>
-            <li  onclick="changePage(this, '{{ route('finance.expenses') }}')"><span aria-hidden="true"></span><span>Expenses</span></li>
-            <li  onclick="changePage(this, '{{ route('finance.sales') }}')"><span aria-hidden="true"></span><span>Sales</span></li>
-            <li  onclick="changePage(this, '{{ route('finance.cashflow') }}')"><span aria-hidden="true"></span><span>Cash Flow</span></li>
-            <li  onclick="changePage(this, '{{ route('finance.accounts') }}')"><span aria-hidden="true"></span><span>Accounts</span></li>
+            <li id="dashboardBtn" class="active" onclick="changePage(this, '{{ route('finance.overview') }}')"><x-heroicon-s-squares-2x2 class="dash-icon" /><span>Dashboard</span></li>
+            <li  onclick="changePage(this, '{{ route('finance.invoicedash') }}')"><x-heroicon-s-chart-bar class="dash-icon" /><span>Invoice</span></li>
+            <li  onclick="changePage(this, '{{ route('finance.expensesdash') }}')"><x-heroicon-s-credit-card class="dash-icon" /><span>Expenses</span></li>
+            <li  onclick="changePage(this, '{{ route('finance.salesdash') }}')"><x-heroicon-s-shopping-cart class="dash-icon" /><span>Sales</span></li>
+            <li  onclick="changePage(this, '{{ route('finance.cashflowdash') }}')"><x-heroicon-s-banknotes class="dash-icon" /><span>Cash Flow</span></li>
+            <li  onclick="changePage(this, '{{ route('finance.accountsdash') }}')"><x-heroicon-s-scale class="dash-icon" /><span>Accounts</span></li>
         </ul>
     </aside>
 
     <!-- Main Content -->
     <main class="main">
-        
+
 
     <iframe
         id="contentFrame"
         name="contentFrame"
-        src="{{ route('finance.overview') }}" > 
+        src="{{ route('finance.overview') }}" >
     </iframe>
- 
+
 
 
     </main>
@@ -422,4 +422,3 @@ function changePage(element, page) {
 
 </body>
 </html>
-

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -52,7 +52,7 @@
         </div>
       </div>
       <div class="text-2xl font-semibold" id="statTotal">
-    â‚±{{ number_format($currentTotal, 2) }}
+    ₱{{ number_format($currentTotal, 2) }}
 </div>
 
       <small class="{{ $color }}">
@@ -68,7 +68,7 @@
         </div>
       </div>
       <div class="text-2xl font-semibold" id="statPaid">
-    â‚±{{ number_format($currentPaid, 2) }}
+    ₱{{ number_format($currentPaid, 2) }}
 </div>
 
 <small class="{{ $paidColor }}">
@@ -84,7 +84,7 @@
         </div>
       </div>
       <div class="text-2xl font-semibold" id="statPending">
-    â‚±{{ number_format($currentPending, 2) }}
+    ₱{{ number_format($currentPending, 2) }}
 </div>
 
 <small class="{{ $pendingColor }}">
@@ -100,7 +100,7 @@
         </div>
       </div>
       <div class="text-2xl font-semibold" id="statOverdue">
-    â‚±{{ number_format($currentOverdue, 2) }}
+    ₱{{ number_format($currentOverdue, 2) }}
 </div>
 
 <small class="{{ $overdueColor }}">
@@ -130,27 +130,29 @@
             <option value="Pending">Pending</option>
             <option value="Overdue">Overdue</option>
             <option value="Draft">Draft</option>
-            
+
           </select>
 
-          <input id="dateRange" type="text" placeholder="Date Range"
-                 class="bg-navy-700 text-sm rounded-lg px-3 py-2 outline-none w-28"
-                 onchange="currentPage = 1; renderInvoices();">
+          <select id="dateRange"
+                    onchange="currentPage = 1; renderInvoices();"
+                    class="bg-navy-700 text-sm rounded-lg px-3 py-2 outline-none">
 
+                <option value="all">All Time</option>
+                <option value="week">Last Week</option>
+                <option value="month">Last Month</option>
+                <option value="year">Last Year</option>
+
+            </select>
           <button onclick="exportCSV()"
                   class="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 transition text-sm rounded-lg px-3 py-2 font-medium">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
             Export
           </button>
-           <button onclick="openInvoiceModal()" class="flex items-center gap-1 bg-emerald-500 hover:bg-emerald-600 transition text-sm rounded-lg px-3 py-2 font-medium">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-            Create
-          </button>
           <div class="relative">
-            
+
           </div>
         </div>
-        
+
       </div>
 
 
@@ -174,9 +176,9 @@
       <div class="flex flex-wrap items-center justify-between mt-4 text-sm text-muted gap-2">
         <span id="pageInfo">Showing 0 of 0 invoices</span>
         <div class="flex items-center gap-2">
-          <button onclick="changePage(-1)" class="px-2 py-1 bg-navy-700 rounded-md">â€¹</button>
+          <button onclick="changePage(-1)" class="px-2 py-1 bg-navy-700 rounded-md">‹</button>
           <span id="pageNumbers" class="flex gap-1 select-none touch-pan-y overflow-x-auto max-w-[220px]"></span>
-          <button onclick="changePage(1)" class="px-2 py-1 bg-navy-700 rounded-md">â€º</button>
+          <button onclick="changePage(1)" class="px-2 py-1 bg-navy-700 rounded-md">›</button>
           <select id="perPage" onchange="currentPage = 1; renderInvoices();" class="bg-navy-700 rounded-md px-2 py-1 ml-2">
             <option value="10">10/page</option>
             <option value="20">20/page</option>
@@ -207,14 +209,14 @@
     </div>
   </div>
 
- 
+
 
 </div>
 <div id="invoiceModalWrap" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
   <div class="bg-navy-800 rounded-xl p-6 w-full max-w-md space-y-4">
     <div class="flex items-center justify-between">
       <h3 class="text-lg font-semibold">New Invoice</h3>
-      <button onclick="closeInvoiceModal()" class="text-muted hover:text-white">âœ•</button>
+      <button onclick="closeInvoiceModal()" class="text-muted hover:text-white">✕</button>
     </div>
     <div class="space-y-3 text-sm">
       <div>
@@ -355,12 +357,15 @@
                     <div class="relative">
 
                         <span class="absolute left-3 top-2.5 text-muted">
-                            â‚±
+                            ₱
                         </span>
 
                         <input
                             id="editAmount"
+
                             name="invoice_amount"
+                            readonly
+
                             type="number"
                             step="0.01"
                             class="w-full bg-navy-700 border border-navy-600 rounded-lg pl-8 pr-3 py-2 text-white">
@@ -368,6 +373,30 @@
                     </div>
 
                 </div>
+                <!-- Paid Amount -->
+                <div>
+
+                <label class="block text-sm text-muted mb-1">
+                    Paid Amount
+                </label>
+
+                <div class="relative">
+
+                <span class="absolute left-3 top-2.5 text-muted">
+                    ₱
+                </span>
+
+                <input
+                    id="editPaidAmount"
+                    name="paid_amount"
+                    type="number"
+                    step="0.01"
+                    class="w-full bg-navy-700 border border-navy-600 rounded-lg pl-8 pr-3 py-2 text-white">
+
+                </div>
+
+                </div>
+
 
                 <!-- Payment Method -->
                 <div>
@@ -384,7 +413,38 @@
                         class="w-full bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-white">
 
                 </div>
+                    <!-- Payment Details -->
+                    <div>
 
+                        <label class="block text-sm text-muted mb-1">
+                            Payment Details
+                        </label>
+
+                        <input
+                            id="editPaymentDetails"
+                            name="payment_details"
+                            type="text"
+                            placeholder="Bank / GCash / Maya Account"
+                            class="w-full bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-white">
+
+                    </div>
+
+
+                    <!-- Reference Number -->
+                    <div>
+
+                        <label class="block text-sm text-muted mb-1">
+                            Reference Number
+                        </label>
+
+                        <input
+                            id="editReferenceNumber"
+                            name="reference_number"
+                            type="text"
+                            placeholder="Transaction Reference"
+                            class="w-full bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-white">
+
+                    </div>
                 <!-- Payment Status -->
                 <div>
 
@@ -434,51 +494,59 @@
     </div>
 
 </div>
-<div id="invoiceTableBody"></div>
+
 
 <script>
   const rawInvoices = @json($invoices);
-
-const clients = [
-    "ABC Corporation",
-    "Delta Traders",
-    "Sunrise Logistics",
-    "Metro Builders",
-    "Pacific Foods"
-];
 
 let invoices = rawInvoices.map(inv => ({
     id: inv.invoice_id,
     number: `INV-${inv.invoice_id}`,
 
+    status: getInvoiceStatus(inv),
+
     issue_date: inv.issue_date,
     due_date: inv.due_date,
-    invoice_amount: Number(inv.invoice_amount),
+
+    invoice_amount: Number(
+    inv.invoice_amount ??
+    getInvoiceAmount(inv) ??
+    0
+),
+outstanding_amount: Number(inv.outstanding_amount ?? 0),
 
     paid_amount: Number(inv.paid_amount),
     discount: Number(inv.discount ?? 0),
     shipping_fee: Number(inv.shipping_fee ?? 0),
 
     order_id: inv.order_id,
+
     client: inv.order?.customer_name ?? "",
     client_name: inv.order?.customer_name ?? "",
     client_address: inv.order?.address ?? "",
-    product_name: inv.order?.product_name ?? "",
-    qty: Number(inv.order?.qty ?? 0),
-    unit_price: Number(inv.order?.amount ?? 0),
+
+    product_name: inv.order?.items?.[0]?.product_name ?? inv.order?.product_name ?? "",
+
+qty: Number(inv.order?.items?.[0]?.qty ?? inv.order?.qty ?? 0),
+
+unit_price: Number(inv.order?.items?.[0]?.product_amount ?? inv.order?.product_amount ?? 0),
 
     payment_method: inv.payment_method ?? "",
     payment_status: inv.payment_status ?? "",
     reference_number: inv.reference_number ?? "",
     payment_details: inv.payment_details ?? "",
-    status: inv.status
+
+    // Order Fulfillment deliberately keeps a summary row rather than an
+    // order_items table. Preserve the detail-printing UI with a single
+    // summary line when that is the only data available.
+    items: inv.order?.items ?? (inv.order ? [{
+        product_name: inv.order.product_name,
+        qty: inv.order.qty,
+        product_amount: inv.order.product_amount,
+    }] : []),
+
+status: getInvoiceStatus(inv)
 }));
-let recentActivity = [
-  { text: "Invoice #2891 has been paid", sub: "ABC Corporation", time: "2h ago", type: "paid" },
-  { text: "Invoice #1234 has been sent", sub: "ABC Corporation", time: "2h ago", type: "sent" },
-  { text: "Invoice #1234 is overdue", sub: "ABC Corporation", time: "2h ago", type: "overdue" },
-  { text: "New Invoice #1234 created", sub: "ABC Corporation", time: "2h ago", type: "created" },
-];
 
 let currentPage = 1;
 
@@ -490,22 +558,132 @@ const statusStyles = {
     Rejected: "bg-gray-500 text-white"
 };
 
-function fmtPeso(n){ return "â‚±" + Number(n).toLocaleString(); }
+function getInvoiceStatus(inv) {
+
+    const outstanding = Number(inv.outstanding_amount ?? 0);
+    const paid = Number(inv.paid_amount ?? 0);
+
+    const dueDate = new Date(inv.due_date);
+    const today = new Date();
+
+
+    // Fully paid
+    if (
+        inv.payment_status === "Paid" ||
+        (outstanding <= 0 && paid > 0)
+    ) {
+        return "Paid";
+    }
+
+
+    // Overdue
+    if (
+        outstanding > 0 &&
+        dueDate < today
+    ) {
+        return "Overdue";
+    }
+
+
+    // Rejected
+    if (
+        inv.status === "Rejected"
+    ) {
+        return "Rejected";
+    }
+
+
+    // Default
+    return inv.status;
+}
+
+function getInvoiceAmount(inv) {
+
+    if (inv.order?.items?.length) {
+
+        return inv.order.items.reduce((total, item) => {
+
+            return total +
+                (Number(item.qty || 0) *
+                 Number(item.product_amount || 0));
+
+        },0);
+
+    }
+
+    return Number(inv.invoice_amount || 0);
+}
+
+function fmtPeso(n){ return "₱" + Number(n).toLocaleString(); }
 function fmtDate(iso){
   const d = new Date(iso);
   return d.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
 }
 
-
 function getFilteredInvoices() {
-  const q = document.getElementById("searchInput").value.toLowerCase();
-  const status = document.getElementById("statusFilter").value;
 
-  return invoices.filter(inv => {
-    const matchesQuery = inv.number.toLowerCase().includes(q) || inv.client.toLowerCase().includes(q);
-    const matchesStatus = status === "All" || inv.status === status;
-    return matchesQuery && matchesStatus;
-  });
+    const query = document.getElementById("searchInput")
+        .value
+        .toLowerCase();
+
+    const status = document.getElementById("statusFilter").value;
+
+    const range = document.getElementById("dateRange").value;
+
+    const today = new Date();
+
+    return invoices.filter(inv => {
+
+        // Search Filter
+        const matchesSearch =
+            inv.number.toLowerCase().includes(query) ||
+            inv.client.toLowerCase().includes(query);
+
+        // Status Filter
+        const matchesStatus =
+            status === "All" || inv.status === status;
+
+        // Date Filter
+        let matchesDate = true;
+
+        if (range !== "all") {
+
+            const issueDate = new Date(inv.issue_date);
+
+            switch (range) {
+
+                case "week":
+
+                    const lastWeek = new Date();
+                    lastWeek.setDate(today.getDate() - 7);
+
+                    matchesDate = issueDate >= lastWeek;
+                    break;
+
+                case "month":
+
+                    const lastMonth = new Date();
+                    lastMonth.setMonth(today.getMonth() - 1);
+
+                    matchesDate = issueDate >= lastMonth;
+                    break;
+
+                case "year":
+
+                    const lastYear = new Date();
+                    lastYear.setFullYear(today.getFullYear() - 1);
+
+                    matchesDate = issueDate >= lastYear;
+                    break;
+            }
+        }
+
+        return matchesSearch &&
+               matchesStatus &&
+               matchesDate;
+
+    });
+
 }
 function renderInvoices() {
     const filtered = getFilteredInvoices();
@@ -542,7 +720,7 @@ function renderInvoices() {
             </td>
 
             <td class="py-2 pr-2">
-                ${fmtPeso(inv.invoice_amount)}
+                ${fmtPeso(getInvoiceAmount(inv))}
             </td>
 
             <td class="py-2 pr-2">
@@ -627,7 +805,7 @@ function renderInvoices() {
         `Showing ${filtered.length === 0 ? 0 : start + 1} to ${Math.min(start + perPage, filtered.length)} of ${filtered.length} invoices`;
 
     renderPageNumbers(totalPages);
-    renderStats();
+
     renderSummary();
     renderActivity();
 }
@@ -659,8 +837,8 @@ function changePage(delta) {
   el.addEventListener("touchend", (e) => {
     const dx = e.changedTouches[0].clientX - touchStartX;
     const SWIPE_THRESHOLD = 40;
-    if (dx <= -SWIPE_THRESHOLD) changePage(1);   
-    else if (dx >= SWIPE_THRESHOLD) changePage(-1); 
+    if (dx <= -SWIPE_THRESHOLD) changePage(1);
+    else if (dx >= SWIPE_THRESHOLD) changePage(-1);
   }, { passive: true });
 })();
 
@@ -673,9 +851,28 @@ function openEditModal(id) {
 
     document.getElementById("editInvoiceId").value = invoice.id;
     document.getElementById("editClient").value = invoice.client;
-    document.getElementById("editAmount").value = invoice.amount;
+    document.getElementById("editAmount").value =getInvoiceAmount(invoice);
+    document.getElementById("editPaidAmount").value = invoice.paid_amount;
     document.getElementById("editStatus").value = invoice.status;
+    document.getElementById("editIssue").value =
+    invoice.issue_date;
 
+document.getElementById("editDue").value =
+    invoice.due_date;
+
+document.getElementById("editPaymentMethod").value =
+    invoice.payment_method ?? "";
+
+document.getElementById("editPaymentDetails").value =
+    invoice.payment_details ?? "";
+
+document.getElementById("editReferenceNumber").value =
+    invoice.reference_number ?? "";
+
+document.getElementById("editPaymentStatus").value =
+    invoice.payment_status ?? "Unpaid";
+
+    document.getElementById("editInvoiceForm").action = `/invoice/${invoice.id}`;
     const modal = document.getElementById("editInvoiceModal");
 
     modal.classList.remove("hidden");
@@ -696,7 +893,7 @@ function rejectInvoice(id) {
         return;
     }
 
-    fetch(`/finance/invoice/${id}/reject`, {
+    fetch(`/invoice/${id}/reject`, {
         method: "PUT",
         headers: {
             "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
@@ -736,7 +933,7 @@ function exportCSV() {
       `"${inv.client}"`,
       fmtDate(inv.issue_date),
       fmtDate(inv.due_date),
-      inv.invoice_amount,
+      getInvoiceAmount(inv),
       inv.status
     ].join(","));
   });
@@ -753,47 +950,86 @@ function exportCSV() {
 }
 
 
-function renderStats() {
-
-    // Ignore rejected invoices
-    const activeInvoices = invoices.filter(i => i.status !== "Rejected");
-
-    const total = activeInvoices.reduce(
-        (sum, i) => sum + i.invoice_amount,
-        0
-    );
-
-    const paid = activeInvoices
-        .filter(i => i.status === "Paid")
-        .reduce((sum, i) => sum + i.invoice_amount, 0);
-
-    const pending = activeInvoices
-        .filter(i => i.status === "Pending")
-        .reduce((sum, i) => sum + i.invoice_amount, 0);
-
-    const overdue = activeInvoices
-        .filter(i => i.status === "Overdue")
-        .reduce((sum, i) => sum + i.invoice_amount, 0);
-
-    document.getElementById("statTotal").textContent = fmtPeso(total);
-    document.getElementById("statPaid").textContent = fmtPeso(paid);
-    document.getElementById("statPending").textContent = fmtPeso(pending);
-    document.getElementById("statOverdue").textContent = fmtPeso(overdue);
-}
 
 function renderSummary() {
-  const activeInvoices = invoices.filter(i => i.status !== "Rejected");
+console.log(invoices.map(i => ({
+    id:i.id,
+    status:i.status,
+    amount:getInvoiceAmount(i)
+})));
 
-const total = activeInvoices.reduce((s, i) => s + i.invoice_amount, 0) || 1;
-const paid = activeInvoices.filter(i => i.status === "Paid").reduce((s, i) => s + i.invoice_amount, 0);
-const pending = activeInvoices.filter(i => i.status === "Pending").reduce((s, i) => s + i.invoice_amount, 0);
-const overdue = activeInvoices.filter(i => i.status === "Overdue").reduce((s, i) => s + i.invoice_amount, 0);
 
-  const segments = [
-    { label: "Paid", value: paid, color: "#2ecc71" },
-    { label: "Pending", value: pending, color: "#f39c12" },
-    { label: "Overdue", value: overdue, color: "#e74c3c" },
-  ];
+  const activeInvoices = invoices.filter(i =>
+    i.status?.toLowerCase() !== "rejected"
+);
+
+
+const total = activeInvoices.reduce((sum, invoice) => {
+
+    return sum +
+        Number(invoice.paid_amount || 0) +
+        Number(invoice.outstanding_amount || 0);
+
+}, 0);
+
+
+const paid = activeInvoices
+.filter(i => i.payment_status === "Paid")
+.reduce((s, i) =>
+    s + Number(i.paid_amount || 0), 0
+);
+
+
+const pending = activeInvoices
+.filter(i => i.status === "Pending")
+.reduce((s, i) =>
+    s + Number(i.outstanding_amount || 0), 0
+);
+
+
+const overdue = activeInvoices
+.filter(i => i.status === "Overdue")
+.reduce((s, i) =>
+    s + Number(i.outstanding_amount || 0), 0
+);
+
+console.log("SUMMARY DEBUG", {
+    activeInvoices,
+    total,
+    paid,
+    pending,
+    overdue
+});
+
+function percentage(value) {
+
+    if (total <= 0) {
+        return 0;
+    }
+
+    return Math.round((value / total) * 100);
+
+}
+
+const segments = [
+    {
+        label: "Paid",
+        value: paid,
+        color: "#2ecc71"
+    },
+
+    {
+        label: "Pending",
+        value: pending,
+        color: "#f39c12"
+    },
+
+    {
+        label: "Overdue",
+        value: overdue,
+        color: "#e74c3c"
+    },
+];
 
   const svg = document.getElementById("donutChart");
   svg.innerHTML = "";
@@ -806,7 +1042,9 @@ const overdue = activeInvoices.filter(i => i.status === "Overdue").reduce((s, i)
   svg.appendChild(bg);
 
   segments.forEach(seg => {
-    const pct = (seg.value / total) * 100;
+    const pct = total > 0
+    ? (seg.value / total) * 100
+    : 0;
     const circle = document.createElementNS("http://www.w3.org/2000/svg","circle");
     circle.setAttribute("cx", cx); circle.setAttribute("cy", cy); circle.setAttribute("r", r);
     circle.setAttribute("fill", "transparent");
@@ -823,60 +1061,15 @@ const overdue = activeInvoices.filter(i => i.status === "Overdue").reduce((s, i)
     <div class="flex items-center gap-2">
       <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:${seg.color}"></span>
       <span class="text-muted">${seg.label}</span>
-      <span class="ml-auto font-medium">${fmtPeso(seg.value)} (${total ? Math.round(seg.value/total*100) : 0}%)</span>
+      <span class="ml-auto font-medium">${fmtPeso(seg.value)} (${percentage(seg.value)}%)</span>
     </div>`).join("");
 }
 
-function renderActivity() {
-  const icons = {
-    paid: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>',
-    sent: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>',
-    overdue: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>',
-    created: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>',
-  };
-  const colors = { paid: "bg-emerald-500", sent: "bg-blue-500", overdue: "bg-amber-500", created: "bg-orange-500" };
-
-  document.getElementById("activityList").innerHTML = recentActivity.map(a => `
-    <li class="flex items-start gap-3">
-      <span class="w-7 h-7 rounded-full ${colors[a.type]} flex items-center justify-center shrink-0">${icons[a.type]}</span>
-      <div class="flex-1">
-        <p>${a.text}</p>
-        <p class="text-muted text-xs">${a.sub}</p>
-      </div>
-      <span class="text-muted text-xs whitespace-nowrap">${a.time}</span>
-    </li>`).join("");
-}
 
 
 
 document.addEventListener("DOMContentLoaded", renderInvoices);
 
-function openInvoiceModal() {
-  document.getElementById("invoiceNumber").value = "";
-  document.getElementById("clientName").value = "";
-  document.getElementById("amount").value = "";
-  document.getElementById("invoiceModalWrap").classList.remove("hidden");
-}
-function closeInvoiceModal() {
-  document.getElementById("invoiceModalWrap").classList.add("hidden");
-}
-
-function createInvoice() {
-  const num = document.getElementById("invoiceNumber").value.trim();
-  const client = document.getElementById("clientName").value.trim();
-  const amt = parseFloat(document.getElementById("amount").value.trim());
-
-  if (!num || !client || !amt) { alert("Please fill in invoice #, client, and amount."); return; }
-
-  invoices.push({
-    number: num, client: client,
-    issue_date: new Date().toISOString().slice(0,10),
-    due_date: new Date().toISOString().slice(0,10),
-    invoice_amount: amt, status: "Draft"
-  });
-    closeInvoiceModal();
-  renderInvoices();
-}
 
 function printInvoice(id) {
 
@@ -918,50 +1111,90 @@ ${invoice.client_address}
     // Invoice Items
     // --------------------------
 
-   let html = `
-<tr>
-    <td>1</td>
-    <td>${invoice.product_name}</td>
-    <td>${invoice.qty}</td>
-    <td>${fmtPeso(invoice.unit_price)}</td>
-    <td>${fmtPeso(invoice.qty * invoice.unit_price)}</td>
-</tr>
-`;
+ let html = "";
+
+invoice.items.forEach((item,index)=>{
+
+    html += `
+    <tr>
+        <td>${index + 1}</td>
+
+        <td>${item.product_name}</td>
+
+        <td>${item.qty}</td>
+
+        <td>
+            ${fmtPeso(item.product_amount)}
+        </td>
+
+        <td>
+            ${fmtPeso(
+                item.qty * item.product_amount
+            )}
+        </td>
+
+    </tr>
+    `;
+
+});
+
 
 document.getElementById("printItems").innerHTML = html;
 
+
     // --------------------------
-    // Totals
-    // --------------------------
+// Totals
+// ---------------------------
 
-    const subtotal = invoice.qty * invoice.unit_price;
-    const discount = invoice.discount;
-      const shipping = invoice.shipping_fee;
+const subtotal = invoice.items.reduce((sum, item) => {
+    return sum + (item.qty * item.product_amount);
+}, 0);
 
-      const taxable = subtotal - discount + shipping;
-      const vat = taxable * 0.12;
-      const grandTotal = taxable + vat;
-      const balance = grandTotal - invoice.paid_amount;
-    document.getElementById("printSubtotal").textContent =
-        fmtPeso(subtotal);
 
-    document.getElementById("printDiscount").textContent =
-        fmtPeso(discount);
+const discount = Number(invoice.discount || 0);
 
-    document.getElementById("printShipping").textContent =
-        fmtPeso(shipping);
+const shipping = Number(invoice.shipping_fee || 0);
 
-    document.getElementById("printVAT").textContent =
-        fmtPeso(vat);
 
-    document.getElementById("printGrandTotal").textContent =
-        fmtPeso(grandTotal);
+// VAT 12%
+const vat = subtotal * 0.12;
 
-    document.getElementById("printPaid").textContent =
-        fmtPeso(invoice.paid_amount);
 
-    document.getElementById("printBalance").textContent =
-        fmtPeso(balance);
+const grandTotal = subtotal + vat - discount + shipping;
+
+
+const paid = Number(invoice.paid_amount || 0);
+
+const balance = grandTotal - paid;
+
+
+
+document.getElementById("printSubtotal").textContent =
+    fmtPeso(subtotal);
+
+
+document.getElementById("printVAT").textContent =
+    fmtPeso(vat);
+
+
+document.getElementById("printGrandTotal").textContent =
+    fmtPeso(grandTotal);
+
+
+document.getElementById("printBalance").textContent =
+    fmtPeso(balance);
+
+
+document.getElementById("printDiscount").textContent =
+    fmtPeso(discount);
+
+
+document.getElementById("printShipping").textContent =
+    fmtPeso(shipping);
+
+
+document.getElementById("printPaid").textContent =
+    fmtPeso(paid);
 
     // --------------------------
     // Payment Information
@@ -1023,15 +1256,17 @@ body{
 .company h1{
     font-size:48px;
     font-weight:bold;
+    color:#000;
 }
 
 .company h2{
     font-size:22px;
     margin-top:5px;
+    color:#000;
 }
 
 .company p{
-    color:#555;
+    color:#000;
     margin-top:4px;
 }
 
@@ -1043,6 +1278,7 @@ body{
     margin-top:40px;
     display:flex;
     justify-content:space-between;
+    color:#000;
 }
 
 .info .box{
@@ -1059,6 +1295,7 @@ body{
 
 .invoice-info td{
     padding:5px 0;
+    color:#000;
 }
 
 .items{
@@ -1081,12 +1318,14 @@ body{
     padding:10px;
     text-align:center;
     border-bottom:1px solid #ddd;
+    color:#000;
 }
 
 .summary{
     width:250px;
     margin-top:40px;
     margin-left:auto;
+    color:#000;
 }
 
 .summary table{
@@ -1101,6 +1340,7 @@ body{
 
 .footer{
     margin-top:80px;
+    color:#000;
 }
 
 .footer h4{
@@ -1130,7 +1370,7 @@ body{
         </div>
 
         <div class="logo">
-            <img src="{{asset('finance/images/Nexora_Logo_Transparent.png')}}" alt="logo">
+            <img src="{{asset('images/Nexora_Logo_Transparent.png')}}" alt="logo">
         </div>
 
     </div>
@@ -1294,5 +1534,3 @@ Client Signature
 
 </body>
 </html>
-
-

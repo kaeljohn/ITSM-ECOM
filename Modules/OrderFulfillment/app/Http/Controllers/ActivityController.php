@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Modules\App\Models\Order;
+use Modules\OrderFulfillment\Models\Order;
 
 class ActivityController extends Controller
 {
@@ -14,6 +14,10 @@ class ActivityController extends Controller
      *
      * Polled every 8s by dashboard.blade.php, order.blade.php, and
      * shipping.blade.php to prepend anything new since their last poll.
+     *
+     * Uses Modules\OrderFulfillment\Models\Order (not App\Models\Order),
+     * since that's the one with the BelongsToClient global scope — without
+     * it this endpoint returned every client's activity to every employee.
      *
      * Only polls on `updated_at`, since there's no separate
      * order_status_logs table yet — good enough for "did something

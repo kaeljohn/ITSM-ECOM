@@ -2,76 +2,262 @@
 
 namespace Modules\Finance\Http\Controllers;
 
+use Modules\Finance\Models\Invoice;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Modules\Finance\Models\Invoice;
-use App\Services\ErpIntegrationService;
+use Illuminate\Support\Collection;
 
 class InvoiceController extends Controller
 {
-    public function index()
+    /**
+     * Calculate dashboard trend.
+     */
+    private function calculateTrend($current, $previous)
     {
-        $invoices = Invoice::query()->latest('issue_date')->get();
-        $currentMonth = Carbon::now();
-        $lastMonth = Carbon::now()->subMonth();
+        if ($previous > 0) {
+            $percent = (($current - $previous) / $previous) * 100;
+        } else {
+            $percent = $current > 0 ? 100 : 0;
+        }
 
-        $monthTotal = fn ($month, ?string $status = null) => Invoice::query()
-            ->when($status, fn ($query) => $query->where('status', $status), fn ($query) => $query->where('status', '!=', 'Rejected'))
-            ->whereYear('issue_date', $month->year)
-            ->whereMonth('issue_date', $month->month)
-            ->sum('invoice_amount');
+        return [
+            'percent' => round($percent, 1),
+            'trend'   => $percent >= 0 ? '↑' : '↓',
+            'color'   => $percent >= 0
+                ? 'text-emerald-400'
+                : 'text-red-400',
+        ];
+    }
+   private function getInvoiceValue(Invoice $invoice): float
+{
+    // Order Fulfillment stores its canonical order summary on orders; it does
+    // not own an order_items table. The accounting record is therefore the
+    // authoritative amount when an invoice is edited.
+    return (float) $invoice->invoice_amount + (float) $invoice->shipping_fee;
+}
 
-        $change = static function (float $current, float $previous): float {
-            return $previous > 0 ? (($current - $previous) / $previous) * 100 : ($current > 0 ? 100 : 0);
-        };
+    /**
+     * Calculate overdue balance.
+     */
+private function calculateOverdue(Collection $invoices): float
+{
+    return (float) $invoices->sum(function ($invoice) {
 
-        $currentTotal = (float) $monthTotal($currentMonth);
-        $lastTotal = (float) $monthTotal($lastMonth);
-        $currentPaid = (float) Invoice::query()->where('status', 'Paid')->whereYear('issue_date', $currentMonth->year)->whereMonth('issue_date', $currentMonth->month)->sum('paid_amount');
-        $lastPaid = (float) Invoice::query()->where('status', 'Paid')->whereYear('issue_date', $lastMonth->year)->whereMonth('issue_date', $lastMonth->month)->sum('paid_amount');
-        $currentPending = (float) $monthTotal($currentMonth, 'Pending');
-        $lastPending = (float) $monthTotal($lastMonth, 'Pending');
-        $overdue = Invoice::query()->where('due_date', '<', now())->where('status', 'Pending')->get()
-            ->sum(fn (Invoice $invoice) => (float) $invoice->invoice_amount - (float) $invoice->discount + (float) $invoice->shipping_fee + (((float) $invoice->invoice_amount - (float) $invoice->discount + (float) $invoice->shipping_fee) * .12) - (float) $invoice->paid_amount);
+        $isOverdue =
+            Carbon::parse($invoice->due_date)->isPast()
+            &&
+            $invoice->outstanding_amount > 0;
 
-        $percent = $change($currentTotal, $lastTotal);
-        $paidPercent = $change($currentPaid, $lastPaid);
-        $pendingPercent = $change($currentPending, $lastPending);
+        return $isOverdue
+            ? $invoice->outstanding_amount
+            : 0;
 
-        return view('finance::invoicedash', compact('invoices', 'currentTotal', 'lastTotal', 'currentPaid', 'lastPaid', 'currentPending', 'lastPending', 'overdue', 'percent', 'paidPercent', 'pendingPercent') + [
-            'trend' => $percent >= 0 ? '↑' : '↓', 'color' => $percent >= 0 ? 'text-emerald-400' : 'text-red-400',
-            'paidTrend' => $paidPercent >= 0 ? '↑' : '↓', 'paidColor' => $paidPercent >= 0 ? 'text-emerald-400' : 'text-red-400',
-            'pendingTrend' => $pendingPercent >= 0 ? '↑' : '↓', 'pendingColor' => $pendingPercent >= 0 ? 'text-emerald-400' : 'text-red-400',
-            'currentOverdue' => $overdue, 'lastOverdue' => 0, 'overduePercent' => 0, 'overdueTrend' => '↑', 'overdueColor' => 'text-emerald-400',
+    });
+}
+
+    /**
+     * Dashboard
+     */
+   public function index()
+{
+
+    $invoices = Invoice::with('order')
+    ->latest('issue_date')
+    ->get();
+
+
+    $currentMonth = Carbon::now();
+$lastMonth = Carbon::now()->subMonth();
+
+
+$currentInvoices = $invoices->filter(function ($invoice) use ($currentMonth) {
+
+    return Carbon::parse($invoice->issue_date)->year == $currentMonth->year
+        && Carbon::parse($invoice->issue_date)->month == $currentMonth->month;
+
+});
+
+
+$lastInvoices = $invoices->filter(function ($invoice) use ($lastMonth) {
+
+    return Carbon::parse($invoice->issue_date)->year == $lastMonth->year
+        && Carbon::parse($invoice->issue_date)->month == $lastMonth->month;
+
+});
+        /*
+        |--------------------------------------------------------------------------
+        | Current / Previous Month Queries
+        |--------------------------------------------------------------------------
+        */
+        /*
+|--------------------------------------------------------------------------
+| Total Invoice Value
+|--------------------------------------------------------------------------
+*/
+
+$currentTotal = $currentInvoices->sum('outstanding_amount')
+    + $currentInvoices->sum('paid_amount');
+
+$lastTotal = $lastInvoices->sum('outstanding_amount')
+    + $lastInvoices->sum('paid_amount');
+
+$totalStats = $this->calculateTrend(
+    $currentTotal,
+    $lastTotal
+);
+       /*
+|--------------------------------------------------------------------------
+| Paid
+|--------------------------------------------------------------------------
+*/
+
+$currentPaid = $currentInvoices
+    ->where('payment_status', 'Paid')
+    ->sum('paid_amount');
+
+$lastPaid = $lastInvoices
+    ->where('payment_status', 'Paid')
+    ->sum('paid_amount');
+
+$paidStats = $this->calculateTrend(
+    $currentPaid,
+    $lastPaid
+);
+
+    /*
+|--------------------------------------------------------------------------
+| Pending
+|--------------------------------------------------------------------------
+*/
+
+$currentPending = $currentInvoices
+    ->where('status', 'Pending')
+    ->sum('outstanding_amount');
+
+$lastPending = $lastInvoices
+    ->where('status', 'Pending')
+    ->sum('outstanding_amount');
+
+$pendingStats = $this->calculateTrend(
+    $currentPending,
+    $lastPending
+);
+
+      /*
+|--------------------------------------------------------------------------
+| Overdue
+|--------------------------------------------------------------------------
+*/
+
+$currentOverdue = $this->calculateOverdue(
+    $currentInvoices
+);
+
+$lastOverdue = $this->calculateOverdue(
+    $lastInvoices
+);
+
+$overdueStats = $this->calculateTrend(
+    $currentOverdue,
+    $lastOverdue
+);
+
+        return view('finance::invoicedash', [
+
+            'invoices' => $invoices,
+
+            'currentTotal' => $currentTotal,
+            'lastTotal' => $lastTotal,
+            'percent' => $totalStats['percent'],
+            'trend' => $totalStats['trend'],
+            'color' => $totalStats['color'],
+
+            'currentPaid' => $currentPaid,
+            'lastPaid' => $lastPaid,
+            'paidPercent' => $paidStats['percent'],
+            'paidTrend' => $paidStats['trend'],
+            'paidColor' => $paidStats['color'],
+
+            'currentPending' => $currentPending,
+            'lastPending' => $lastPending,
+            'pendingPercent' => $pendingStats['percent'],
+            'pendingTrend' => $pendingStats['trend'],
+            'pendingColor' => $pendingStats['color'],
+
+            'currentOverdue' => $currentOverdue,
+            'lastOverdue' => $lastOverdue,
+            'overduePercent' => $overdueStats['percent'],
+            'overdueTrend' => $overdueStats['trend'],
+            'overdueColor' => $overdueStats['color'],
         ]);
     }
 
-    public function store(Request $request)
-    {
-        $data = $request->validate(['issue_date' => 'required|date', 'due_date' => 'required|date', 'invoice_amount' => 'required|numeric', 'status' => 'required|string|max:20']);
-        Invoice::create($data + ['discount' => 0, 'shipping_fee' => 0, 'paid_amount' => 0, 'payment_status' => 'Unpaid']);
-        return back()->with('success', 'Invoice created successfully.');
-    }
 
-    public function update(Request $request, Invoice $invoice)
-    {
-        $data = $request->validate(['invoice_amount' => 'required|numeric', 'status' => 'required|string|max:20']);
-        if (strtolower($data['status']) === 'paid') {
-            $data += [
-                'payment_status' => 'Paid',
-                'paid_amount' => $data['invoice_amount'],
-                'payment_date' => now()->toDateString(),
-            ];
-        }
-        $invoice->update($data);
-        app(ErpIntegrationService::class)->financeInvoiceChanged((int) session('employee_client_id'), $invoice->fresh());
-        return response()->json(['success' => true]);
-    }
+   /**
+ * Update invoice payment information
+ */
+public function update(Request $request, Invoice $invoice)
+{
+    $validated = $request->validate([
 
-    public function reject(Invoice $invoice)
+        'status'             => 'required|string|max:20',
+        'payment_status'     => 'required|string|max:20',
+
+        'paid_amount'        => 'required|numeric|min:0',
+
+        'payment_method'     => 'nullable|string|max:100',
+        'payment_details'    => 'nullable|string',
+        'reference_number'   => 'nullable|string|max:100',
+
+        'payment_details' => 'nullable',
+            'reference_number' => 'nullable',
+
+    ]);
+
+    // Calculate invoice total from order items
+    $invoiceTotal = $this->getInvoiceValue($invoice);
+
+    // Prevent negative outstanding balance
+    if ($validated['paid_amount'] > $invoiceTotal) {
+    return back()->withErrors([
+        'paid_amount' => 'Paid amount cannot exceed the invoice total.'
+    ]);
+
+}
+
+$outstanding = $invoiceTotal - $validated['paid_amount'];
+
+    $invoice->update([
+
+            'status'             => $validated['payment_status'],
+            'payment_status'     => $validated['payment_status'],
+
+            'paid_amount'        => $validated['paid_amount'],
+            'outstanding_amount' => $outstanding,
+
+            'payment_method'     => $validated['payment_method'],
+            'payment_details'    => $validated['payment_details'],
+            'reference_number'   => $validated['reference_number'],
+
+        ]);
+
+    return back()->with(
+        'success',
+        'Invoice updated successfully.'
+    );
+}
+
+    /**
+     * Reject invoice
+     */
+   public function reject(Invoice $invoice)
     {
-        $invoice->update(['status' => 'Rejected']);
-        app(ErpIntegrationService::class)->financeInvoiceChanged((int) session('employee_client_id'), $invoice->fresh(), true);
-        return response()->json(['success' => true]);
+        $invoice->update([
+            'status' => 'Rejected',
+        ]);
+
+        return response()->json([
+            'success' => true,
+        ]);
     }
 }

@@ -4,18 +4,18 @@ namespace Modules\OrderFulfillment\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\OrderFulfillment\Models\Concerns\BelongsToClient;
 
 class OrderItem extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToClient;
 
-    // order_items has no client_id column and isn't tenant-scoped, so this
-    // model intentionally does NOT use the BelongsToClient trait — that
-    // trait's global scope filters on a column this table doesn't have.
-    // It still needs the same DB connection BelongsToClient would have set,
-    // so that's declared directly here instead.
-    protected $connection = 'order_fulfillment';
-
+    // order_items now has a client_id column (added via the
+    // add_client_id_to_order_items_table migration) and is tenant-scoped
+    // like the rest of the module. BelongsToClient supplies both the
+    // 'order_fulfillment' connection and the client_id global scope, so
+    // the explicit $connection property this model used to declare is no
+    // longer needed.
     protected $table = 'order_items';
 
     protected $fillable = [

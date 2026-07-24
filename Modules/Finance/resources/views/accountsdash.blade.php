@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -23,7 +23,7 @@
     body {
       margin: 0;
       height: 100vh;
-      background-color: #0B1E3D; 
+      background-color: #0B1E3D;
     }
   </style>
 </head>
@@ -51,7 +51,7 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
 
 <div class="main-wrapper max-w-[1400px] mx-auto p-6 space-y-4">
 
- 
+
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div>
       <h1 class="text-2xl font-semibold">Charts of Account</h1>
@@ -65,7 +65,7 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
 
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div class="flex flex-wrap items-center gap-2">
-      
+
 
       <div class="flex items-center gap-2 bg-navy-800 border border-navy-600 rounded-lg px-3 py-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -80,7 +80,7 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
     <div class="flex items-center gap-3">
       <div class="relative">
         <div id="settingsMenu" class="dd-menu hidden absolute right-0 mt-1 bg-navy-800 border border-navy-600 rounded-lg shadow-lg text-sm w-56 p-3 space-y-3 z-20">
-          
+
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" id="chkIncludeInactive" onchange="state.includeInactive=this.checked; state.page=1; renderTable();" class="w-4 h-4 accent-blue-500">
             Include inactive accounts
@@ -90,7 +90,7 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
     </div>
   </div>
 
-  
+
   <div class="flex justify-end items-center gap-3 text-sm text-muted">
     <button id="prevBtn" onclick="changePage(-1)" class="hover:text-white disabled:opacity-40 disabled:cursor-not-allowed" disabled>Previous</button>
     <span id="pageInfo" class="text-white">1 - 10</span>
@@ -117,14 +117,14 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
             <th class="py-3 pr-2 cursor-pointer" onclick="setSort('detail')">
               <span class="inline-flex items-center gap-1">DETAIL TYPE <span id="sort-detail"></span></span>
             </th>
-            
+
             <th class="py-3 pr-2 cursor-pointer" onclick="setSort('balance')">
               <span class="inline-flex items-center gap-1">BALANCE <span id="sort-balance"></span></th>
               <th class="py-3 pr-2 cursor-pointer" onclick="setSort('detail')">
               <span class="inline-flex items-center gap-1">DATE<span id="sort-detail"></span></span>
             </th>
             <th class="py-3 pr-4">ACTION</th>
-          
+
         </thead>
         <tbody id="tableBody"></tbody>
       </table>
@@ -168,7 +168,7 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
             </div>
 
             <div>
-                
+
             </div>
 
             <div>
@@ -249,14 +249,14 @@ if (editingAccountId) {
 }
 function fmtMoney(n){
   const neg = n < 0;
-  const v = "â‚±" + Math.abs(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+  const v = "₱" + Math.abs(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
   return neg ? `-${v}` : v;
 }
 
 function getFiltered(){
   return accounts.filter(a => {
     if (!state.includeInactive && a.inactive) return false;
-    if (state.filterType !== "All" && a.account_type !== state.filterType) return false;
+    if (state.filterType !== "All" && a.type !== state.filterType) return false;
     const q = state.search.toLowerCase();
     if (q && !(a.name.toLowerCase().includes(q) || a.number.toLowerCase().includes(q))) return false;
     return true;
@@ -313,8 +313,8 @@ function populateTypeSelect(){
 }
 
 function sortIndicator(field){
-  if (state.sortField !== field) return `<span class="text-muted">â‡…</span>`;
-  return state.sortDir === "asc" ? `<span class="text-blue-400">â†‘</span>` : `<span class="text-blue-400">â†“</span>`;
+  if (state.sortField !== field) return `<span class="text-muted">⇅</span>`;
+  return state.sortDir === "asc" ? `<span class="text-blue-400">↑</span>` : `<span class="text-blue-400">↓</span>`;
 }
 
 function renderTable(){
@@ -332,9 +332,9 @@ function renderTable(){
         <input type="checkbox" onchange="toggleSelect('${a.number}')" ${state.selected.has(a.number) ? 'checked' : ''} class="w-4 h-4 accent-blue-500 cursor-pointer">
       </td>
       <td class="${state.compact ? 'py-1.5' : 'py-3'} pr-2 font-medium">${a.name}${a.inactive ? ' <span class=\"text-muted text-xs\">(inactive)</span>' : ''}</td>
-      <td class="${state.compact ? 'py-1.5' : 'py-3'} pr-2 text-muted">${a.number || 'â€”'}</td>
+      <td class="${state.compact ? 'py-1.5' : 'py-3'} pr-2 text-muted">${a.number || '—'}</td>
       <td class="${state.compact ? 'py-1.5' : 'py-3'} pr-2">${a.type}</td>
-      <td class="${state.compact ? 'py-1.5' : 'py-3'} pr-2 text-muted">${a.detail || 'â€”'}</td>
+      <td class="${state.compact ? 'py-1.5' : 'py-3'} pr-2 text-muted">${a.detail || '—'}</td>
       <td class="${state.compact ? 'py-1.5' : 'py-3'} pr-2">${fmtMoney(a.balance)}</td>
 
 <td class="${state.compact ? 'py-1.5' : 'py-3'} pr-2">
@@ -471,7 +471,7 @@ async function saveAccount() {
         let method = "POST";
 
         if (editingAccountId !== null) {
-            url = `/finance/accounts/${editingAccountId}`;
+            url = `/accounts/${editingAccountId}`;
             method = "PUT";
         }
 
@@ -546,7 +546,7 @@ async function deleteAccount(id) {
 
     try {
 
-        const response = await fetch(`/finance/accounts/${id}`, {
+        const response = await fetch(`/accounts/${id}`, {
             method: "DELETE",
             headers: {
                 "X-CSRF-TOKEN": "{{ csrf_token() }}",
@@ -584,5 +584,3 @@ renderTable();
 
 </body>
 </html>
-
-

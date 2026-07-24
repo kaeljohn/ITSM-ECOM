@@ -5,15 +5,40 @@ namespace Modules\Procurement\Http\Controllers\Procurement;
 use App\Http\Controllers\Controller;
 use Modules\Procurement\Models\Delivery;
 use Modules\Procurement\Models\PurchaseOrder;
-use Modules\Procurement\Models\Requisition;
 use Modules\Procurement\Models\Supplier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DeliveryController extends Controller
 {
+    private function updatePurchaseOrderDeliveryState(PurchaseOrder $purchaseOrder, string $status, string $deliveryStatus): void
+    {
+        $schema = Schema::connection('procurement');
+        $update = [];
+
+        if ($schema->hasColumn('purchase_orders', 'status')) {
+            $update['status'] = $status;
+        }
+
+        // delivery_status is present in older Procurement databases but not
+        // in every dedicated-schema deployment. It is an optional mirror of
+        // the delivery state, never a reason to fail after saving a delivery.
+        if ($schema->hasColumn('purchase_orders', 'delivery_status')) {
+            $update['delivery_status'] = $deliveryStatus;
+        }
+
+        if ($update !== []) {
+            DB::connection('procurement')
+                ->table('purchase_orders')
+                ->where('id', $purchaseOrder->id)
+                ->update($update);
+        }
+    }
+
     private function nextAvailableShipmentNumber(string $requestedNumber): string
     {
         if (! preg_match('/^(.*?)(\d+)$/', $requestedNumber, $matches)) {
@@ -125,20 +150,7 @@ class DeliveryController extends Controller
         ]);
 
         if ($purchaseOrder) {
-            $purchaseOrder->update(['delivery_status' => 'intransit', 'status' => 'processing']);
-
-            $requisition = null;
-            if (! empty($purchaseOrder->requisition_reference)) {
-                $requisition = Requisition::where('req_number', $purchaseOrder->requisition_reference)->first();
-            }
-
-            if (! $requisition && $purchaseOrder->requisition_id) {
-                $requisition = Requisition::find($purchaseOrder->requisition_id);
-            }
-
-            if ($requisition) {
-                $requisition->update(['delivery_status' => 'intransit']);
-            }
+            $this->updatePurchaseOrderDeliveryState($purchaseOrder, 'processing', 'intransit');
         }
 
         return response()->json([
@@ -215,20 +227,7 @@ class DeliveryController extends Controller
         $delivery->update($updateData);
 
         if ($purchaseOrder && $status === 'complete') {
-            $purchaseOrder->update(['status' => 'completed', 'delivery_status' => 'complete']);
-
-            $requisition = null;
-            if (! empty($purchaseOrder->requisition_reference)) {
-                $requisition = Requisition::where('req_number', $purchaseOrder->requisition_reference)->first();
-            }
-
-            if (! $requisition && $purchaseOrder->requisition_id) {
-                $requisition = Requisition::find($purchaseOrder->requisition_id);
-            }
-
-            if ($requisition) {
-                $requisition->update(['status' => 'completed', 'delivery_status' => 'complete']);
-            }
+            $this->updatePurchaseOrderDeliveryState($purchaseOrder, 'completed', 'complete');
         }
 
         return response()->json(['success' => true, 'data' => $delivery]);

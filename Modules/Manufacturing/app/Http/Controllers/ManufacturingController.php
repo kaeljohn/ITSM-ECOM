@@ -13,6 +13,7 @@ use Modules\Manufacturing\Services\DueDateService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class ManufacturingController extends Controller
 {
@@ -42,15 +43,18 @@ class ManufacturingController extends Controller
     // ── Work orders ──────────────────────────────────────────────────────────
     public function updateOrder(Request $request): JsonResponse
     {
-        $orderIndex  = (int)  $request->input('orderIndex');
         $partChanges = (array) $request->input('partChanges', []);
         $sendToQC    = (bool)  $request->input('sendToQC', false);
         $cancelOrder = (bool)  $request->input('cancelOrder', false);
 
-        $order = WorkOrder::with('parts')->orderBy('due_date', 'asc')->get()->values()->get($orderIndex);
+        $order = $request->filled('workOrderId')
+            ? WorkOrder::with('parts')->find($request->input('workOrderId'))
+            : WorkOrder::with('parts')->orderBy('due_date', 'asc')->get()->values()->get((int) $request->input('orderIndex'));
         if (!$order) {
             return response()->json(['success' => false, 'message' => 'Order not found.'], 404);
         }
+
+        $this->assertCanOperateWorkOrder($order);
 
         DB::connection('manufacturing')->transaction(function () use ($order, $partChanges, $sendToQC, $cancelOrder) {
             $partsByPosition = $order->parts->values();
@@ -91,6 +95,16 @@ class ManufacturingController extends Controller
         $results = $request->input('results', []);
 
         $order = WorkOrder::find($woId);
+        if (! $order) {
+            return response()->json(['success' => false, 'message' => 'Work order not found.'], 404);
+        }
+
+        $this->assertCanOperateWorkOrder($order);
+
+        if ($order->status !== 'QC Check') {
+            return response()->json(['success' => false, 'message' => 'Only work orders in QC Check can be released from quality control.'], 422);
+        }
+
         $range = $order->range ?? null;
 
         $targetService   = new BenchmarkTargetService();
@@ -113,7 +127,9 @@ class ManufacturingController extends Controller
             ];
         }, $results);
 
-        DB::connection('manufacturing')->transaction(function () use ($woId, $cleanResults, $range, $targetService, $order) {
+        $flagged = array_values(array_filter($cleanResults, fn ($r) => in_array($r['verdict'], ['Warn', 'Fail'], true)));
+
+        DB::connection('manufacturing')->transaction(function () use ($woId, $cleanResults, $range, $targetService, $order, $flagged) {
             $session = QcSession::where('wo_id', $woId)->first();
             if (!$session) {
                 $session = QcSession::create(['wo_id' => $woId, 'build_type' => $range ?? 'mid-range', 'tech' => '']);
@@ -129,7 +145,6 @@ class ManufacturingController extends Controller
                 ]);
             }
 
-            $flagged = array_values(array_filter($cleanResults, fn ($r) => in_array($r['verdict'], ['Warn', 'Fail'])));
             if (count($flagged) > 0 && !ReworkOrder::where('wo_id', $woId)->exists()) {
                 $targets = $targetService->targetsFor($range);
 
@@ -163,9 +178,48 @@ class ManufacturingController extends Controller
                     ]);
                 }
             }
+
+            if ($flagged) {
+                $order->update(['status' => 'Rework']);
+            }
         });
 
-        return response()->json(['success' => true]);
+        if ($flagged) {
+            return response()->json([
+                'success' => true,
+                'status' => 'Rework',
+                'message' => 'QC flagged issues. A rework order has been created.',
+            ]);
+        }
+
+        if (! $cleanResults || collect($cleanResults)->contains(fn (array $result) => $result['verdict'] !== 'Pass')) {
+            return response()->json([
+                'success' => true,
+                'status' => 'QC Check',
+                'message' => 'QC results were saved. Every check must pass before this order can be released.',
+            ]);
+        }
+
+        try {
+            $fulfillmentOrderId = $this->releaseToFulfillment($order);
+            $order->update(['status' => 'Completed']);
+
+            return response()->json([
+                'success' => true,
+                'status' => 'Completed',
+                'fulfillmentOrderId' => $fulfillmentOrderId,
+                'message' => $fulfillmentOrderId
+                    ? 'QC passed. The order is now ready for packing in Order Fulfillment.'
+                    : 'QC passed. The manufacturing work order is complete.',
+            ]);
+        } catch (RuntimeException $exception) {
+            report($exception);
+
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
     }
 
     // ── Rework ───────────────────────────────────────────────────────────────
@@ -255,6 +309,8 @@ class ManufacturingController extends Controller
     // ── Workers ──────────────────────────────────────────────────────────────
     public function addWorker(Request $request): JsonResponse
     {
+        $this->assertCanManageManufacturing();
+
         Worker::create([
             'name'  => $request->input('name'),
             'role'  => $request->input('role'),
@@ -265,6 +321,8 @@ class ManufacturingController extends Controller
 
     public function updateWorker(Request $request): JsonResponse
     {
+        $this->assertCanManageManufacturing();
+
         $worker = Worker::find($request->input('id'));
         if (!$worker) {
             return response()->json(['success' => false, 'message' => 'Worker not found.'], 404);
@@ -279,6 +337,8 @@ class ManufacturingController extends Controller
 
     public function deleteWorker(Request $request): JsonResponse
     {
+        $this->assertCanManageManufacturing();
+
         $worker = Worker::find($request->input('id'));
         if (!$worker) {
             return response()->json(['success' => false, 'message' => 'Worker not found.'], 404);
@@ -289,12 +349,44 @@ class ManufacturingController extends Controller
 
     public function assignWorker(Request $request): JsonResponse
     {
-        $order = WorkOrder::find($request->input('orderId'));
+        $this->assertCanManageManufacturing();
+
+        $validated = $request->validate([
+            'orderId' => ['required', 'string'],
+            'workerId' => ['required', 'integer'],
+        ]);
+
+        $order = WorkOrder::find($validated['orderId']);
         if (!$order) {
             return response()->json(['success' => false, 'message' => 'Work order not found.'], 404);
         }
-        $order->update(['assigned' => $request->input('workerName')]);
-        return response()->json(['success' => true]);
+
+        $worker = DB::connection('hr')->table('employees')
+            ->where('id', $validated['workerId'])
+            ->where('client_id', $order->client_id)
+            ->where('approval_status', 'Active')
+            ->where(function ($query): void {
+                $query->whereRaw("LOWER(COALESCE(department, '')) LIKE ?", ['%production%'])
+                    ->orWhereRaw("LOWER(COALESCE(position, '')) LIKE ?", ['%production%'])
+                    ->orWhereRaw("LOWER(COALESCE(position, '')) LIKE ?", ['%manufacturing%']);
+            })
+            ->first();
+
+        if (! $worker) {
+            return response()->json(['success' => false, 'message' => 'Select an active Production Management employee.'], 422);
+        }
+
+        $name = trim(implode(' ', array_filter([$worker->first_name, $worker->middle_name, $worker->last_name, $worker->suffix])));
+        $changes = [
+            'assigned_employee_id' => $worker->id,
+            'assigned' => $name,
+        ];
+        if ($order->status === 'Pending') {
+            $changes['status'] = 'Building';
+        }
+        $order->update($changes);
+
+        return response()->json(['success' => true, 'status' => $changes['status'] ?? $order->status]);
     }
 
     // ── Requisitions / inventory ─────────────────────────────────────────────
@@ -335,12 +427,15 @@ class ManufacturingController extends Controller
     // ── Work orders (cont.) ──────────────────────────────────────────────────
     public function cancelOrder(Request $request): JsonResponse
     {
-        $orderIndex = (int) $request->input('orderIndex');
-        $order = WorkOrder::orderBy('due_date', 'asc')->get()->values()->get($orderIndex);
+        $order = $request->filled('workOrderId')
+            ? WorkOrder::find($request->input('workOrderId'))
+            : WorkOrder::orderBy('due_date', 'asc')->get()->values()->get((int) $request->input('orderIndex'));
 
         if (!$order) {
             return response()->json(['success' => false, 'message' => 'Order not found.'], 404);
         }
+
+        $this->assertCanOperateWorkOrder($order);
 
         if ($order->status === 'Cancelled') {
             return response()->json(['success' => false, 'message' => 'Order is already cancelled.'], 422);
@@ -367,6 +462,7 @@ class ManufacturingController extends Controller
             'status'   => $request->input('status', 'Pending'),
             'due_date' => $dueDate->toDateString(),
             'source'   => $request->input('source'),
+            'fulfillment_order_id' => $request->input('fulfillmentOrderId'),
             'assigned' => $request->input('assigned'),
             'range'    => $request->input('range'),
         ]);
@@ -385,5 +481,92 @@ class ManufacturingController extends Controller
             'id'      => $order->id,
             'dueDate' => $dueDate->toDateString(),
         ]);
+    }
+
+    /**
+     * An assigned production worker can only progress their own work order.
+     * Production managers, supervisors, and quality staff retain the ability
+     * to coordinate the client-wide production queue.
+     */
+    private function assertCanOperateWorkOrder(WorkOrder $order): void
+    {
+        if (config('nexora.root_admin_module_testing') && auth()->user()?->role === 'root_admin') {
+            return;
+        }
+
+        if ($this->canManageManufacturing() || $this->isQualityEmployee()) {
+            return;
+        }
+
+        abort_unless(
+            $order->assigned_employee_id && (int) $order->assigned_employee_id === (int) session('employee_id'),
+            403,
+            'You can only progress work orders assigned to you.'
+        );
+    }
+
+    private function assertCanManageManufacturing(): void
+    {
+        if (config('nexora.root_admin_module_testing') && auth()->user()?->role === 'root_admin') {
+            return;
+        }
+
+        abort_unless($this->canManageManufacturing(), 403, 'Only a production manager or supervisor can assign staff.');
+    }
+
+    private function canManageManufacturing(): bool
+    {
+        $position = strtolower((string) session('employee_position'));
+
+        return session('employee_role') === 'admin'
+            || str_contains($position, 'manager')
+            || str_contains($position, 'supervisor');
+    }
+
+    private function isQualityEmployee(): bool
+    {
+        return str_contains(strtolower((string) session('employee_position')), 'quality')
+            || str_contains(strtolower((string) session('employee_department')), 'quality');
+    }
+
+    /**
+     * Release a passed manufacturing build into the dedicated fulfillment
+     * database. Non-ecommerce/internal work orders have no linked order and
+     * simply complete in Manufacturing.
+     */
+    private function releaseToFulfillment(WorkOrder $workOrder): ?string
+    {
+        $fulfillmentOrderId = $workOrder->fulfillment_order_id;
+
+        if (! $fulfillmentOrderId && preg_match('/^Ecommerce\s+(.+)$/i', (string) $workOrder->source, $matches)) {
+            $fulfillmentOrderId = trim($matches[1]);
+            $workOrder->update(['fulfillment_order_id' => $fulfillmentOrderId]);
+        }
+
+        if (! $fulfillmentOrderId) {
+            return null;
+        }
+
+        $fulfillment = DB::connection('order_fulfillment')->table('orders')
+            ->where('id', $fulfillmentOrderId)
+            ->where('client_id', $workOrder->client_id)
+            ->first();
+
+        if (! $fulfillment) {
+            throw new RuntimeException('The linked Order Fulfillment order could not be found for this work order.');
+        }
+
+        if (in_array(strtoupper((string) $fulfillment->status), ['CANCELLED', 'DELIVERED', 'RETURNED'], true)) {
+            throw new RuntimeException('The linked Order Fulfillment order can no longer be released for packing.');
+        }
+
+        if (strtoupper((string) $fulfillment->status) === 'NEW') {
+            DB::connection('order_fulfillment')->table('orders')
+                ->where('id', $fulfillmentOrderId)
+                ->where('client_id', $workOrder->client_id)
+                ->update(['status' => 'PACKING', 'updated_at' => now()]);
+        }
+
+        return $fulfillmentOrderId;
     }
 }

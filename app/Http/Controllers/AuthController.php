@@ -95,7 +95,7 @@ class AuthController extends Controller
     {
         $company = $user->company_id ? \App\Models\Company::find($user->company_id) : null;
 
-        if ($company && $this->restoreLegacyClientSetup($company)) {
+        if ($company && $this->isExistingClientCompany($company)) {
             return route('client.itsm.employees');
         }
 
@@ -111,17 +111,18 @@ class AuthController extends Controller
     }
 
     /**
-     * Older client accounts existed before the onboarding fields were added
-     * to ITSM.  A rollback can therefore leave a real client with no setup
-     * timestamp even though HR already owns its employee records.  Repair the
-     * ITSM marker from that authoritative HR data instead of forcing the
-     * system admin through initial onboarding again.
+     * Companies created before the ITSM onboarding flow can be identified by
+     * either their existing onboarding marker/HR manager pointer or HR-owned
+     * employee records. A rollback may leave the HR record unavailable, but
+     * that must not send an established client through onboarding again.
+     *
+     * A genuinely new company has none of these markers, so it still begins
+     * the normal onboarding flow.
      */
-    private function restoreLegacyClientSetup(\App\Models\Company $company): bool
+    private function isExistingClientCompany(\App\Models\Company $company): bool
     {
-        if ($company->setup_completed_at && $company->hr_employee_id
-            && $this->hrEmployeeProfileProvisioner->hasEmployeeForCompany($company, (int) $company->hr_employee_id)) {
-            return false;
+        if ($company->setup_completed_at || $company->hr_employee_id) {
+            return true;
         }
 
         $employees = $this->hrEmployeeProfileProvisioner->employeesForCompany($company);
@@ -134,7 +135,7 @@ class AuthController extends Controller
 
         $company->forceFill([
             'hr_employee_id' => (int) $hrManager->id,
-            'setup_completed_at' => $company->setup_completed_at ?? now(),
+            'setup_completed_at' => now(),
         ])->save();
 
         return true;

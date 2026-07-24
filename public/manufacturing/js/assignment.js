@@ -57,7 +57,7 @@ function handleWorkerCardClick(workerIndex) {
         updateWorkerSelectionHighlight();
         updateConfirmButtonState();
     } else {
-        openEditWorkerModal(workerIndex);
+        showSuccess('Select an unassigned work order before choosing a Production staff member.');
     }
 }
 
@@ -89,7 +89,7 @@ function assignWorkerToOrder(orderIndex, workerIndex) {
     fetch('/manufacturing/assign-worker', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-        body:    JSON.stringify({ orderId: order.id, workerName: worker.name }),
+        body:    JSON.stringify({ orderId: order.id, workerId: worker.id }),
     })
     .then(res => res.json())
     .then(data => {

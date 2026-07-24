@@ -51,7 +51,7 @@ class ErpIntegrationService
             $totalQuantity = (int) $items->sum('quantity');
             $amount = (float) $order->total;
 
-            $this->createFulfillmentOrder($clientId, (string) $order->id, $customer, $productSummary, $totalQuantity, $amount, $order);
+            $this->createFulfillmentOrder($clientId, (string) $order->id, $customer, $productSummary, $totalQuantity, $amount, $order, $items);
             $this->createManufacturingWorkOrder($clientId, (string) $order->id, $productSummary, $totalQuantity);
             $this->createProcurementRequisition($clientId, (string) $order->id, $productSummary, $totalQuantity, $amount);
             $this->createFinanceInvoice($clientId, (string) $order->id, $amount, (float) $order->shipping_fee, (string) $order->payment_status);
@@ -273,12 +273,35 @@ class ErpIntegrationService
         });
     }
 
-    private function createFulfillmentOrder(int $clientId, string $orderId, string $customer, string $product, int $quantity, float $amount, object $order): void
+    private function createFulfillmentOrder(int $clientId, string $orderId, string $customer, string $product, int $quantity, float $amount, object $order, iterable $items): void
     {
         $db = DB::connection('order_fulfillment');
         if ($db->table('orders')->where('id', $orderId)->exists()) return;
         $address = is_array($order->shipping_address) ? implode(', ', array_filter($order->shipping_address)) : null;
         $db->table('orders')->insert(['id' => $orderId, 'client_id' => $clientId, 'customer_name' => $customer ?: 'Customer', 'product_name' => $product ?: 'Storefront order', 'qty' => $quantity, 'product_amount' => $amount, 'status' => 'NEW', 'address' => $address, 'due_date' => now()->addDays(3)->toDateString(), 'created_at' => now(), 'updated_at' => now()]);
+
+        if (! Schema::connection('order_fulfillment')->hasTable('order_items')) {
+            return;
+        }
+
+        $lines = collect($items)->map(function ($item) use ($clientId, $orderId): array {
+            $quantity = max(1, (int) data_get($item, 'quantity', 1));
+            $unitPrice = (float) (data_get($item, 'price') ?? data_get($item, 'unit_price', 0));
+
+            return [
+                'client_id'      => $clientId,
+                'order_id'       => $orderId,
+                'product_name'   => (string) data_get($item, 'name', 'Storefront item'),
+                'qty'            => $quantity,
+                'product_amount' => $unitPrice,
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ];
+        })->all();
+
+        if ($lines) {
+            $db->table('order_items')->insert($lines);
+        }
     }
 
     private function createManufacturingWorkOrder(int $clientId, string $orderId, string $product, int $quantity): void
@@ -286,7 +309,7 @@ class ErpIntegrationService
         $db = DB::connection('manufacturing');
         $id = 'WO-'.strtoupper(substr(sha1($orderId), 0, 12));
         if ($db->table('work_orders')->where('id', $id)->exists()) return;
-        $this->insertAvailable('manufacturing', 'work_orders', ['id' => $id, 'client_id' => $clientId, 'name' => $product ?: 'Storefront assembly', 'specs' => "Ecommerce order {$orderId}; quantity {$quantity}", 'status' => 'Pending', 'due' => now()->addDays(3)->toDateString(), 'due_date' => now()->addDays(3)->toDateString(), 'source' => 'Ecommerce '.$orderId, 'assigned' => null, 'created_at' => now(), 'updated_at' => now()]);
+        $this->insertAvailable('manufacturing', 'work_orders', ['id' => $id, 'client_id' => $clientId, 'fulfillment_order_id' => $orderId, 'name' => $product ?: 'Storefront assembly', 'specs' => "Ecommerce order {$orderId}; quantity {$quantity}", 'status' => 'Pending', 'due' => now()->addDays(3)->toDateString(), 'due_date' => now()->addDays(3)->toDateString(), 'source' => 'Ecommerce '.$orderId, 'assigned' => null, 'created_at' => now(), 'updated_at' => now()]);
     }
 
     private function createProcurementRequisition(int $clientId, string $orderId, string $product, int $quantity, float $amount): void
@@ -302,7 +325,7 @@ class ErpIntegrationService
         $db = DB::connection('finance');
         if ($db->table('invoice')->where('nexora_client_id', $clientId)->where('order_id', $orderId)->exists()) return;
         $paid = strtolower($paymentStatus) === 'paid';
-        $this->insertAvailable('finance', 'invoice', ['nexora_client_id' => $clientId, 'issue_date' => now()->toDateString(), 'due_date' => now()->addDays(14)->toDateString(), 'invoice_amount' => $amount - $shipping, 'discount' => 0, 'shipping_fee' => $shipping, 'paid_amount' => $paid ? $amount : 0, 'payment_method' => null, 'reference_number' => 'ECOM-'.$orderId, 'payment_details' => 'Automatically generated from ecommerce checkout', 'payment_status' => $paid ? 'Paid' : 'Unpaid', 'status' => $paid ? 'Paid' : 'Pending', 'payment_date' => $paid ? now()->toDateString() : null, 'order_id' => $orderId, 'created_at' => now(), 'updated_at' => now()]);
+        $this->insertAvailable('finance', 'invoice', ['nexora_client_id' => $clientId, 'issue_date' => now()->toDateString(), 'due_date' => now()->addDays(14)->toDateString(), 'invoice_amount' => $amount - $shipping, 'discount' => 0, 'shipping_fee' => $shipping, 'paid_amount' => $paid ? $amount : 0, 'outstanding_amount' => $paid ? 0 : $amount, 'payment_method' => null, 'reference_number' => 'ECOM-'.$orderId, 'payment_details' => 'Automatically generated from ecommerce checkout', 'payment_status' => $paid ? 'Paid' : 'Unpaid', 'status' => $paid ? 'Paid' : 'Pending', 'payment_date' => $paid ? now()->toDateString() : null, 'order_id' => $orderId, 'created_at' => now(), 'updated_at' => now()]);
     }
 
     private function writeBiSnapshot(int $clientId): void

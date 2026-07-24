@@ -75,7 +75,8 @@ $workerRole = request()->get('role','');
 
             {{-- Default header, hidden while assigning --}}
             <div id="worker-mgmt-header">
-                <h3 class="text-xl font-bold mb-4">Worker Management</h3>
+                <h3 class="text-xl font-bold mb-1">Production Staff</h3>
+                <p class="text-sm text-nexora-slate-500 mb-4">Active employees from HR</p>
             </div>
 
             <p id="assign-instructions" class="hidden text-sm text-nexora-slate-500 mb-4">Click a worker to select them, then hit Confirm Assignment</p>
@@ -93,7 +94,7 @@ $workerRole = request()->get('role','');
                     </div>
                 @endforeach
                 @if(empty($workers))
-                    <p class="text-sm text-nexora-slate-500 italic col-span-2 text-center py-8">No workers added yet</p>
+                    <p class="text-sm text-nexora-slate-500 italic col-span-2 text-center py-8">No active Production Management staff are available in HR.</p>
                 @endif
             </div>
         </div>

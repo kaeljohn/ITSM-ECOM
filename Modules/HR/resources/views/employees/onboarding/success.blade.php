@@ -43,7 +43,19 @@
                     class="w-[650px] h-[45px] bg-[#132B52] text-white text-sm rounded px-4 pr-12 border border-blue-500/30 cursor-not-allowed"
                 />
 
-                
+                <!-- Copy Icon -->
+                <button
+                    type="button"
+                    class="absolute right-4 top-1/2 -translate-y-1/2 text-blue-300 hover:text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <rect x="9" y="9" width="11" height="11" rx="2" stroke-width="2"/>
+                        <rect x="4" y="4" width="11" height="11" rx="2" stroke-width="2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
         <!-- Email & Password Row -->
         <div class="flex gap-6">
 

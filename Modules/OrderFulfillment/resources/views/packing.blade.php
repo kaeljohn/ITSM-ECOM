@@ -48,26 +48,6 @@
     gap:14px;
     text-decoration:none;
     color:inherit;
-    cursor:pointer;
-    transition:
-        transform .25s ease,
-        filter .25s ease;
-}
-
-.brand-logo:hover{
-    transform:scale(1.06);
-    filter:drop-shadow(0 8px 18px rgba(59,130,246,.45));
-}
-
-.brand-logo:active{
-    transform:scale(.96);
-}
-
-.brand-logo:visited,
-.brand-logo:link,
-.brand-logo:hover,
-.brand-logo:active{
-    color:inherit;
 }
 
 .brand-logo .title{
@@ -932,6 +912,119 @@
 
   .btn-error-ok:hover { background: #99283a; }
 
+  /* Success toast — same look as the "assigned to" toast on the Shipping
+     page, so the confirmation feel is consistent across tabs. */
+  .assign-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #22c55e;
+    color: #08240f;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 12px 22px;
+    border-radius: 8px;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 200;
+    pointer-events: none;
+  }
+
+  .assign-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ===== Nav actions (links + profile grouped on the right) ===== */
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .nav-divider {
+    width: 1px;
+    height: 22px;
+    background: rgba(255,255,255,0.18);
+  }
+
+  /* ===== Profile menu ===== */
+  .profile-menu {
+    position: relative;
+  }
+
+  .profile-trigger {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-header);
+    padding: 0;
+  }
+
+  .profile-trigger img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .profile-trigger:hover {
+    border-color: rgba(255,255,255,0.35);
+  }
+
+  .profile-dropdown {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    background: var(--bg-header);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    min-width: 190px;
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+    z-index: 100;
+  }
+
+  .profile-dropdown.open {
+    display: flex;
+  }
+
+  .profile-dropdown a,
+  .profile-dropdown button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text-light);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .profile-dropdown a:hover,
+  .profile-dropdown button:hover {
+    background: rgba(255,255,255,0.08);
+  }
+
+  .profile-dropdown .divider {
+    height: 1px;
+    background: var(--border-soft);
+    margin: 4px 0;
+  }
 </style>
 </head>
 <body>
@@ -942,22 +1035,35 @@
 
     <!-- Navbar -->
     <div class="navbar">
-      <form method="POST" action="{{ route('order-fulfillment.logout') }}" style="display:inline;">
-        @csrf
-        <button type="submit" class="brand brand-logo" style="background:none;border:none;padding:0;font:inherit;">
-          <img class="logo" src="{{ asset('orderfulfillment/logo/Nexora_Logo_Transparent.png') }}" alt="Nexora Logo">
-          <div class="brand-text">
-              <div class="title">NEXORA</div>
-              <div class="subtitle">ENTERPRISE RESOURCE PLANNING</div>
+      <div class="brand brand-logo">
+        <img class="logo" src="{{ asset('orderfulfillment/logo/Nexora_Logo_Transparent.png') }}" alt="Nexora Logo">
+        <div class="brand-text">
+            <div class="title">NEXORA</div>
+            <div class="subtitle">ENTERPRISE RESOURCE PLANNING</div>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <div class="nav-links">
+          <a href="{{ route('order-fulfillment.dashboard') }}">Dashboard</a>
+          <a href="{{ route('order-fulfillment.orders') }}">Orders</a>
+          <a href="{{ route('order-fulfillment.packing') }}" class="active">Packing</a>
+          <a href="{{ route('order-fulfillment.shipping') }}">Shipping</a>
+          <a href="{{ route('order-fulfillment.return') }}">Returns</a>
+        </div>
+        <div class="nav-divider"></div>
+        <div class="profile-menu" id="profileMenu">
+          <button type="button" class="profile-trigger" id="profileTrigger" aria-label="Account menu">
+            <img src="{{ asset('orderfulfillment/logo/pf.png') }}" alt="Profile">
+          </button>
+          <div class="profile-dropdown" id="profileDropdown">
+            <a href="{{ route('order-fulfillment.dashboard') }}">Employee Dashboard</a>
+            <div class="divider"></div>
+            <form method="POST" action="{{ route('order-fulfillment.logout') }}" style="margin:0;">
+              @csrf
+              <button type="submit">Log out</button>
+            </form>
           </div>
-        </button>
-      </form>
-      <div class="nav-links">
-        <a href="{{ route('order-fulfillment.dashboard') }}">Dashboard</a>
-        <a href="{{ route('order-fulfillment.orders') }}">Orders</a>
-        <a href="{{ route('order-fulfillment.packing') }}" class="active">Packing</a>
-        <a href="{{ route('order-fulfillment.shipping') }}">Shipping</a>
-        <a href="{{ route('order-fulfillment.return') }}">Returns</a>
+        </div>
       </div>
     </div>
 
@@ -1165,11 +1271,11 @@
         <p class="section-label">Courier</p>
         <div class="courier-options">
           <div class="courier-option jt" data-courier="J&T" onclick="selectCourier(this)">
-            <img src="{{ asset('logo/jt-logo.png') }}" alt="J&T Express" class="courier-logo">
+            <img src="{{ asset('orderfulfillment/logo/jt-logo.png') }}" alt="J&T Express" class="courier-logo">
             <span class="courier-name">J &amp; T Express</span>
           </div>
           <div class="courier-option flash" data-courier="FLASH" onclick="selectCourier(this)">
-            <img src="{{ asset('logo/flash-logo.png') }}" alt="Flash Express" class="courier-logo">
+            <img src="{{ asset('orderfulfillment/logo/flash-logo.png') }}" alt="Flash Express" class="courier-logo">
             <span class="courier-name">FLASH Express</span>
           </div>
         </div>
@@ -1183,6 +1289,8 @@
   </div>
 
   <div class="filter-overlay" id="filterOverlay"></div>
+
+  <div class="assign-toast" id="packToast">Order packed successfully</div>
 
   <div class="overlay" id="packingFailedOverlay">
     <div class="modal error-modal">
@@ -1285,6 +1393,29 @@
     let currentOrderId = null;
     let selectedBox = null;
     let selectedCourier = null;
+    let isSubmittingPacking = false; // guards against double-click/double-submit on "Done"
+
+    function showPackToast(message, isError = false) {
+      const toast = document.getElementById('packToast');
+      toast.textContent = message;
+      toast.style.background = isError ? '#ef4444' : '#22c55e';
+      toast.style.color = isError ? '#ffffff' : '#08240f';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    // completePacking() does a full page reload right after a successful
+    // packing call (the row needs to disappear from the queue), so the
+    // toast can't just be shown in-place like the Shipping page's — it
+    // would be wiped out before anyone saw it. Stash the message before
+    // reloading and pick it back up here once the fresh page has loaded.
+    (function () {
+      const pending = sessionStorage.getItem('packToastMessage');
+      if (pending) {
+        sessionStorage.removeItem('packToastMessage');
+        showPackToast(pending);
+      }
+    })();
 
     function openRequestModal() {
       document.getElementById('reqNumber').value = 'REQ-' + String(Date.now()).slice(-5);
@@ -1314,21 +1445,30 @@
     if (!payload.qty || payload.qty <= 0) { alert('Enter a valid quantity'); return; }
     if (!payload.requested_by) { alert('Enter your name'); return; }
 
-    const response = await fetch(`{{ url('/material-requests') }}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-      },
-      body: JSON.stringify(payload)
-    });
+    try {
+      const response = await fetch(`{{ route('order-fulfillment.material-requests.store') }}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify(payload)
+      });
 
-    const result = await response.json();
+      const result = await response.json().catch(() => ({}));
       if (result.success) {
-      closeRequestModal();
-      location.reload();
-    } else {
-      alert(result.message || 'Failed to submit request.');
+        closeRequestModal();
+        showPackToast(result.message || 'Material request sent to Procurement.');
+      } else {
+        const validationMessage = result.errors
+          ? Object.values(result.errors).flat().join('\n')
+          : null;
+        alert(validationMessage || result.message || `Failed to submit request (HTTP ${response.status}).`);
+      }
+    } catch (error) {
+      console.error('Material request failed:', error);
+      alert('Could not submit the material request. Please try again.');
       }
     }
 
@@ -1523,53 +1663,110 @@
         return;
     }
 
-    const response = await fetch(
-         `{{ url('/packing/process') }}/${encodeURIComponent(currentOrderId)}`,
-        {
-            method:'POST',
+    // Prevent a fast double-click (or a slow request plus an impatient
+    // second click) from firing this twice for the same order.
+    if (isSubmittingPacking) {
+        return;
+    }
+    isSubmittingPacking = true;
 
-            headers:{
-                'Content-Type':'application/json',
-                'X-CSRF-TOKEN':
-                document.querySelector(
-                    'meta[name="csrf-token"]'
-                ).content
-            },
+    const doneBtn = document.querySelector('#packingOverlay .btn-done');
+    if (doneBtn) {
+        doneBtn.disabled = true;
+        doneBtn.classList.add('disabled');
+    }
 
-            body: JSON.stringify({
-                courier:selectedCourier,
-                box:selectedBox
-            })
-        }
-    );
-
-    let result;
     try {
-        result = await response.json();
-    } catch (e) {
-        // Server returned something that wasn't JSON (e.g. an HTML error
-        // page from an unhandled server error). Show a generic failure
-        // instead of leaving the user with no feedback at all.
-        showPackingFailedModal('The server returned an unexpected response. Please try again.');
-        return;
-    }
+        const response = await fetch(
+             `{{ url('/order-fulfillment/packing/process') }}/${encodeURIComponent(currentOrderId)}`,
+            {
+                method:'POST',
 
-    if (result.success) {
-        location.reload();
-        return;
-    }
+                headers:{
+                    'Content-Type':'application/json',
+                    'X-CSRF-TOKEN':
+                    document.querySelector(
+                        'meta[name="csrf-token"]'
+                    ).content
+                },
 
-    if (result.error === 'insufficient_stock') {
-        showPackingFailedModal(
-            `Not enough <span class="missing-material">${result.material}</span> in stock to pack this order. Please restock and try again.`
+                body: JSON.stringify({
+                    courier:selectedCourier,
+                    box:selectedBox
+                })
+            }
         );
-    } else if (result.error === 'order_not_found') {
-        showPackingFailedModal('This order could not be found. It may have already been processed.');
-    } else {
-        showPackingFailedModal('Something went wrong while packing this order. Please try again.');
-    }
 
+        let result;
+        try {
+            result = await response.json();
+        } catch (e) {
+            // Server returned something that wasn't JSON (e.g. an HTML error
+            // page from an unhandled server error). Show a generic failure
+            // instead of leaving the user with no feedback at all.
+            showPackingFailedModal('The server returned an unexpected response. Please try again.');
+            return;
+        }
+
+        if (result.success) {
+            sessionStorage.setItem(
+                'packToastMessage',
+                `Order packed & shipped as ${result.shipment_id}`
+            );
+            location.reload();
+            return;
+        }
+
+        if (result.error === 'insufficient_stock') {
+            showPackingFailedModal(
+                `Not enough <span class="missing-material">${result.material}</span> in stock to pack this order. Please restock and try again.`
+            );
+        } else if (result.error === 'order_not_found') {
+            showPackingFailedModal('This order could not be found. It may have already been processed.');
+        } else if (result.error === 'already_processed') {
+            // Another request for this same order already went through
+            // (e.g. an earlier click already succeeded) — refresh so the
+            // queue reflects reality instead of letting the user retry
+            // into a second shipment.
+            showPackingFailedModal('This order is already being processed or was already shipped.');
+        } else {
+            showPackingFailedModal('Something went wrong while packing this order. Please try again.');
+        }
+    } finally {
+        // Always release the guard and re-enable the button, whether the
+        // request succeeded, failed, or errored — otherwise a failed
+        // request would leave "Done" permanently disabled.
+        isSubmittingPacking = false;
+        if (doneBtn) {
+            doneBtn.disabled = false;
+            doneBtn.classList.remove('disabled');
+        }
+    }
   }
+  </script>
+
+  <script>
+    (function () {
+      const menu = document.getElementById('profileMenu');
+      const trigger = document.getElementById('profileTrigger');
+      const dropdown = document.getElementById('profileDropdown');
+      if (!menu || !trigger || !dropdown) return;
+
+      trigger.addEventListener('click', function (e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!menu.contains(e.target)) {
+          dropdown.classList.remove('open');
+        }
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') dropdown.classList.remove('open');
+      });
+    })();
   </script>
 
 </body>

@@ -17,6 +17,7 @@ class FinanceServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'finance');
+        $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
 
         Route::middleware('web')->prefix('finance')->group(__DIR__.'/../../routes/web.php');
     }

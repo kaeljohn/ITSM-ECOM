@@ -19,11 +19,17 @@ class DashboardController extends Controller
         // All data below must remain on the dedicated Order Fulfillment
         // connection. The prior DB::table calls silently switched back to
         // ITSM's main database.
-        $ordersReceivedToday = (clone $orders)->where('status', 'NEW')->count();
-        $inPackingCount      = (clone $orders)->where('status', 'PACKING')->count();
-        $shippedTodayCount   = (clone $orders)->where('status', 'SHIPPED')->count();
-        $deliveredCount      = (clone $orders)->where('status', 'DELIVERED')->count();
         $totalOrders         = (clone $orders)->count();
+        $inPackingCount      = (clone $orders)->where('status', 'PACKING')->count();
+        // "In shipping" = every non-delivered shipping status — dispatched
+        // but not yet delivered (or delayed en route). Previously this only
+        // counted literal status == 'SHIPPED', which undercounted anything
+        // sitting in READY_TO_SHIP, OUT_FOR_DELIVERY, or DELAYED.
+        $inShippingCount     = (clone $orders)
+            ->whereIn('status', ['READY_TO_SHIP', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELAYED'])
+            ->count();
+        $deliveredCount      = (clone $orders)->where('status', 'DELIVERED')->count();
+        $totalFulfilled      = $deliveredCount;
         $onTimeRate          = $totalOrders > 0 ? round(($deliveredCount / $totalOrders) * 100) : 0;
 
         // ---- Board columns ----
@@ -83,11 +89,11 @@ class DashboardController extends Controller
             ->values();
 
         return view('order-fulfillment::dashboard', compact(
-            'ordersReceivedToday',
-            'inPackingCount',
-            'shippedTodayCount',
-            'deliveredCount',
             'totalOrders',
+            'inPackingCount',
+            'inShippingCount',
+            'deliveredCount',
+            'totalFulfilled',
             'onTimeRate',
             'newOrders',
             'packingOrders',

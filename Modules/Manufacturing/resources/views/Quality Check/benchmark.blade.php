@@ -328,6 +328,7 @@
         </div>
     @endif
 
+    @if($selectedOrder)
     {{-- ── ENTER RESULTS BACKDROP ── --}}
     <div id="benchmark-backdrop"
         class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center hidden"
@@ -438,6 +439,7 @@
             assigned:  "{{ $selectedOrder['assigned'] }}",
         };
     </script>
+    @endif
 </div>
 
 <script>initSortableTables();</script>

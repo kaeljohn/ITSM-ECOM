@@ -3,10 +3,10 @@
 namespace Modules\Manufacturing\Services;
 
 use Modules\Manufacturing\Models\WorkOrder;
-use Modules\Manufacturing\Models\Worker;
 use Modules\Manufacturing\Models\QcSession;
 use Modules\Manufacturing\Models\ReworkOrder;
 use Modules\Manufacturing\Models\Requisition;
+use Illuminate\Support\Facades\DB;
 
 class ManufacturingDataService
 {
@@ -26,7 +26,15 @@ class ManufacturingDataService
     // ── Work orders ──────────────────────────────────────────────────────────
     public function workOrders(): array
     {
-        return WorkOrder::with('parts')->orderBy('due_date', 'asc')->get()->map(fn ($wo) => [
+        $query = WorkOrder::with('parts')->orderBy('due_date', 'asc');
+
+        // Production staff work from their own queue. Managers, supervisors,
+        // quality staff, and root-admin testing retain the client-wide view.
+        if ($this->isAssignedProductionWorker()) {
+            $query->where('assigned_employee_id', session('employee_id'));
+        }
+
+        return $query->get()->map(fn ($wo) => [
             'id'       => $wo->id,
             'name'     => $wo->name,
             'specs'    => $wo->specs,
@@ -36,7 +44,9 @@ class ManufacturingDataService
                 : $wo->due,
             'dueDate'  => optional($wo->due_date)->toDateString(),
             'source'   => $wo->source,
-            'assigned' => $wo->assigned,
+            'fulfillmentOrderId' => $wo->fulfillment_order_id,
+            'assigned' => $wo->assigned ?: 'Unassigned',
+            'assignedEmployeeId' => $wo->assigned_employee_id,
             'range'    => $wo->range,
             'createdAt'=> optional($wo->created_at)->toDateTimeString(),
             'parts'    => $wo->parts->map(fn ($p) => [
@@ -48,14 +58,48 @@ class ManufacturingDataService
         ])->values()->all();
     }
 
+    private function isAssignedProductionWorker(): bool
+    {
+        if (config('nexora.root_admin_module_testing') && auth()->user()?->role === 'root_admin') {
+            return false;
+        }
+
+        $position = strtolower((string) session('employee_position'));
+        $department = strtolower((string) session('employee_department'));
+        $isProduction = str_contains($position, 'production')
+            || str_contains($position, 'manufacturing')
+            || str_contains($department, 'production')
+            || str_contains($department, 'manufacturing');
+        $isCoordinator = session('employee_role') === 'admin'
+            || str_contains($position, 'manager')
+            || str_contains($position, 'supervisor')
+            || str_contains($position, 'quality')
+            || str_contains($department, 'quality');
+
+        return $isProduction && ! $isCoordinator && (bool) session('employee_id');
+    }
+
     // ── Workers ──────────────────────────────────────────────────────────────
     public function workers(): array
     {
-        return Worker::orderBy('id')->get()->map(fn ($w) => [
-            'id'    => $w->id,
-            'name'  => $w->name,
-            'role'  => $w->role,
-            'notes' => $w->notes,
+        $workers = DB::connection('hr')->table('employees')
+            ->where('approval_status', 'Active')
+            ->where(function ($query): void {
+                $query->whereRaw("LOWER(COALESCE(department, '')) LIKE ?", ['%production%'])
+                    ->orWhereRaw("LOWER(COALESCE(position, '')) LIKE ?", ['%production%'])
+                    ->orWhereRaw("LOWER(COALESCE(position, '')) LIKE ?", ['%manufacturing%']);
+            });
+
+        if (! (config('nexora.root_admin_module_testing') && auth()->user()?->role === 'root_admin')) {
+            $workers->where('client_id', session('employee_client_id'));
+        }
+
+        return $workers->orderBy('last_name')->orderBy('first_name')->get()->map(fn ($employee) => [
+            'id'         => (int) $employee->id,
+            'employeeId' => $employee->employee_id,
+            'name'       => trim(implode(' ', array_filter([$employee->first_name, $employee->middle_name, $employee->last_name, $employee->suffix]))),
+            'role'       => $employee->position ?: 'Production Staff',
+            'notes'      => $employee->department,
         ])->values()->all();
     }
 

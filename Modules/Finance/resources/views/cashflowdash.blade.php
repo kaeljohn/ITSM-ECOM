@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -33,7 +33,7 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18v13H3z"/><path d="M3 7l3-4h12l3 4"/><circle cx="12" cy="14" r="2"/></svg>
         </div>
       </div>
-      <div class="text-2xl font-semibold" id="cfCashOnHand">â‚±0</div>
+      <div class="text-2xl font-semibold" id="cfCashOnHand">₱0</div>
       <small class="text-muted text-xs">Available balance</small>
       <small id="cfCashOnHandChange" class="text-emerald-400"></small>
     </div>
@@ -45,7 +45,7 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
         </div>
       </div>
-      <div class="text-2xl font-semibold" id="cfInflow">â‚±0</div>
+      <div class="text-2xl font-semibold" id="cfInflow">₱0</div>
       <small class="text-muted text-xs">This month</small>
       <small id="cfInflowChange" class="text-emerald-400"></small>
     </div>
@@ -57,7 +57,7 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
         </div>
       </div>
-      <div class="text-2xl font-semibold" id="cfOutflow">â‚±0</div>
+      <div class="text-2xl font-semibold" id="cfOutflow">₱0</div>
       <small class="text-muted text-xs">This month</small>
       <small id="cfOutflowChange" class="text-red-400"></small>
     </div>
@@ -69,7 +69,7 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
         </div>
       </div>
-      <div class="text-2xl font-semibold" id="cfNet">â‚±0</div>
+      <div class="text-2xl font-semibold" id="cfNet">₱0</div>
       <small class="text-muted text-xs">This month</small>
       <small id="cfNetChange" class="text-emerald-400"></small>
     </div>
@@ -108,23 +108,23 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
         <div class="flex justify-between text-muted">
           <span>Beginning Cash Balance</span>
         </div>
-        <div class="font-semibold text-base" id="cfSummaryBeginning">â‚±0</div>
+        <div class="font-semibold text-base" id="cfSummaryBeginning">₱0</div>
 
         <div class="flex justify-between">
           <span class="text-muted">+ Cash Inflow</span>
-          <span class="text-emerald-400 font-medium" id="cfSummaryInflow">â‚±0</span>
+          <span class="text-emerald-400 font-medium" id="cfSummaryInflow">₱0</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-muted">âˆ’ Cash Outflow</span>
-          <span class="text-red-400 font-medium" id="cfSummaryOutflow">â‚±0</span>
+          <span class="text-muted">− Cash Outflow</span>
+          <span class="text-red-400 font-medium" id="cfSummaryOutflow">₱0</span>
         </div>
         <div class="flex justify-between border-t border-navy-600 pt-2">
           <span class="text-muted">Net Cash Flow</span>
-          <span class="text-brand font-medium" id="cfSummaryNet">â‚±0</span>
+          <span class="text-brand font-medium" id="cfSummaryNet">₱0</span>
         </div>
 
         <div class="text-muted pt-2">Ending Cash Balance</div>
-        <div class="font-semibold text-base" id="cfSummaryEnding">â‚±0</div>
+        <div class="font-semibold text-base" id="cfSummaryEnding">₱0</div>
       </div>
     </div>
     <div class="bg-navy-800 rounded-xl p-5">
@@ -191,15 +191,15 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
       <div class="space-y-2 text-sm flex-1">
         <div class="flex justify-between">
           <span class="text-muted">Cash on Hand (start)</span>
-          <span class="font-medium" id="cfPosStart">â‚±0</span>
+          <span class="font-medium" id="cfPosStart">₱0</span>
         </div>
         <div class="flex justify-between">
           <span class="text-muted">Net Cash Flow</span>
-          <span class="font-medium" id="cfPosNet">â‚±0</span>
+          <span class="font-medium" id="cfPosNet">₱0</span>
         </div>
         <div class="flex justify-between bg-navy-700 rounded-lg px-3 py-2 mt-2">
           <span class="text-muted">Cash on Hand (end)</span>
-          <span class="font-semibold text-brand" id="cfPosEnd">â‚±0</span>
+          <span class="font-semibold text-brand" id="cfPosEnd">₱0</span>
         </div>
       </div>
       <button onclick="viewCashFlowReport()"
@@ -215,15 +215,15 @@ tailwind.config = { theme: { extend: { colors: { navy: {900:'#0b1e3b',800:'#132b
 
 <script>
 
-function fmtPeso(n){ 
+function fmtPeso(n){
   if (typeof n !== 'number' || isNaN(n) || n < 0) n = 0;
-  return "â‚±" + Math.round(n).toLocaleString(); 
+  return "₱" + Math.round(n).toLocaleString();
 }
 
 function fmtChange(pct){
   if (typeof pct !== 'number' || isNaN(pct)) return "";
   const up = pct >= 0;
-  return `${up ? "â–²" : "â–¼"} ${Math.abs(pct).toFixed(2)}% vs. last month`;
+  return `${up ? "▲" : "▼"} ${Math.abs(pct).toFixed(2)}% vs. last month`;
 }
 
 let cashFlowData = {
@@ -241,14 +241,14 @@ function setCashFlowData(data) {
     console.warn('Invalid cash flow data received');
     return;
   }
-  
+
   if (data.cashOnHand) {
     setCashOnHand(
       data.cashOnHand.amount,
       data.cashOnHand.changePct
     );
   }
-  
+
   if (data.topline) {
     setCashFlowTopline(
       data.topline.inflow,
@@ -259,7 +259,7 @@ function setCashFlowData(data) {
       data.topline.changes?.net
     );
   }
-  
+
   if (data.trend) {
     setCashFlowTrendData(
       data.trend.months,
@@ -267,7 +267,7 @@ function setCashFlowData(data) {
       data.trend.outflow
     );
   }
-  
+
   if (data.summary) {
     setCashFlowSummary(
       data.summary.beginningBalance,
@@ -275,24 +275,24 @@ function setCashFlowData(data) {
       data.summary.outflow
     );
   }
-  
+
   if (data.activity) {
     setActivityBreakdown(data.activity);
   }
-  
+
   if (data.statement) {
     setCashFlowStatement(data.statement);
   }
-  
+
   if (data.upcoming) {
     setUpcomingOutflows(data.upcoming);
   }
 }
 
 function setCashOnHand(amount, changePct){
-  cashFlowData.cashOnHand = { 
-    amount: typeof amount === 'number' && !isNaN(amount) && amount >= 0 ? amount : 0, 
-    changePct: typeof changePct === 'number' && !isNaN(changePct) ? changePct : null 
+  cashFlowData.cashOnHand = {
+    amount: typeof amount === 'number' && !isNaN(amount) && amount >= 0 ? amount : 0,
+    changePct: typeof changePct === 'number' && !isNaN(changePct) ? changePct : null
   };
   renderCashOnHand();
 }
@@ -309,15 +309,15 @@ function renderCashOnHand(){
 }
 
 function setCashFlowTopline(inflow, outflow, net, changeInflow, changeOutflow, changeNet){
-  cashFlowData.topline = { 
+  cashFlowData.topline = {
     inflow: typeof inflow === 'number' && !isNaN(inflow) && inflow >= 0 ? inflow : 0,
     outflow: typeof outflow === 'number' && !isNaN(outflow) && outflow >= 0 ? outflow : 0,
     net: typeof net === 'number' && !isNaN(net) ? net : 0,
-    changes: { 
+    changes: {
       inflow: typeof changeInflow === 'number' && !isNaN(changeInflow) ? changeInflow : null,
       outflow: typeof changeOutflow === 'number' && !isNaN(changeOutflow) ? changeOutflow : null,
       net: typeof changeNet === 'number' && !isNaN(changeNet) ? changeNet : null
-    } 
+    }
   };
   renderTopline();
 }
@@ -330,9 +330,9 @@ function renderTopline(){
 
   const setChange = (id, pct) => {
     const el = document.getElementById(id);
-    if (pct === null) { 
-      el.textContent = ""; 
-      return; 
+    if (pct === null) {
+      el.textContent = "";
+      return;
     }
     el.textContent = fmtChange(pct);
     el.className = pct >= 0 ? "text-emerald-400" : "text-red-400";
@@ -343,7 +343,7 @@ function renderTopline(){
 }
 
 function setCashFlowTrendData(months, inflowArr, outflowArr){
-  cashFlowData.trend = { 
+  cashFlowData.trend = {
     months: Array.isArray(months) ? months : [],
     inflow: Array.isArray(inflowArr) ? inflowArr.map(v => typeof v === 'number' && !isNaN(v) && v >= 0 ? v : 0) : [],
     outflow: Array.isArray(outflowArr) ? outflowArr.map(v => typeof v === 'number' && !isNaN(v) && v >= 0 ? v : 0) : []
@@ -352,7 +352,7 @@ function setCashFlowTrendData(months, inflowArr, outflowArr){
 }
 
 function setCashFlowSummary(beginningBalance, inflow, outflow){
-  cashFlowData.summary = { 
+  cashFlowData.summary = {
     beginningBalance: typeof beginningBalance === 'number' && !isNaN(beginningBalance) && beginningBalance >= 0 ? beginningBalance : 0,
     inflow: typeof inflow === 'number' && !isNaN(inflow) && inflow >= 0 ? inflow : 0,
     outflow: typeof outflow === 'number' && !isNaN(outflow) && outflow >= 0 ? outflow : 0
@@ -410,13 +410,13 @@ function renderActivityDonut() {
     offset += pct;
   });
 
-  document.getElementById("cfActivityLegend").innerHTML = cashFlowData.activity.length > 0 ? 
+  document.getElementById("cfActivityLegend").innerHTML = cashFlowData.activity.length > 0 ?
     cashFlowData.activity.map(seg => `
       <div class="flex items-center gap-2">
         <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:${seg.color}"></span>
         <span class="text-muted">${seg.label}</span>
         <span class="ml-auto font-medium">${fmtPeso(seg.value)}</span>
-      </div>`).join("") : 
+      </div>`).join("") :
     '<span class="text-muted text-xs">No activity data</span>';
 }
 
@@ -442,11 +442,11 @@ function setCashFlowStatement(rows){
 function renderStatement() {
   const rows = cashFlowData.statement;
   if (rows.length === 0) {
-    document.getElementById("cfStatementBody").innerHTML = 
+    document.getElementById("cfStatementBody").innerHTML =
       '<tr><td colspan="4" class="text-center text-muted py-4">No statement data</td></tr>';
     return;
   }
-  
+
   const totalInflow = rows.reduce((s, r) => s + r.inflow, 0);
   const totalOutflow = rows.reduce((s, r) => s + r.outflow, 0);
 
@@ -500,7 +500,7 @@ function renderTrendChart() {
   const months = cashFlowData.trend.months.slice(-range);
   const inflow = cashFlowData.trend.inflow.slice(-range);
   const outflow = cashFlowData.trend.outflow.slice(-range);
-  
+
   if (months.length === 0) {
     svg.innerHTML = '';
     const text = document.createElementNS("http://www.w3.org/2000/svg","text");
@@ -513,7 +513,7 @@ function renderTrendChart() {
     svg.appendChild(text);
     return;
   }
-  
+
   const net = inflow.map((v, i) => v - outflow[i]);
 
   svg.innerHTML = "";

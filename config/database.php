@@ -196,9 +196,6 @@ return [
             'prefix' => '', 'prefix_indexes' => true,
             'search_path' => env('ECOMMERCE_DB_SEARCH_PATH', 'public'),
             'sslmode' => env('ECOMMERCE_DB_SSLMODE', 'prefer'),
-            'options' => extension_loaded('pdo_pgsql') ? array_filter([
-                PDO::ATTR_EMULATE_PREPARES => true,
-            ]) : [],
         ],
         'manufacturing' => [
             'driver' => env('MANUFACTURING_DB_CONNECTION', 'pgsql'),

@@ -44,26 +44,6 @@
     gap:14px;
     text-decoration:none;
     color:inherit;
-    cursor:pointer;
-    transition:
-        transform .25s ease,
-        filter .25s ease;
-}
-
-.brand-logo:hover{
-    transform:scale(1.06);
-    filter:drop-shadow(0 8px 18px rgba(59,130,246,.45));
-}
-
-.brand-logo:active{
-    transform:scale(.96);
-}
-
-.brand-logo:visited,
-.brand-logo:link,
-.brand-logo:hover,
-.brand-logo:active{
-    color:inherit;
 }
 
 .brand-logo .title{
@@ -427,47 +407,150 @@
   color: #5FCB8A;
 }
 
+  /* ===== Nav actions (links + profile grouped on the right) ===== */
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .nav-divider {
+    width: 1px;
+    height: 22px;
+    background: rgba(255,255,255,0.18);
+  }
+
+  /* ===== Profile menu ===== */
+  .profile-menu {
+    position: relative;
+  }
+
+  .profile-trigger {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-header);
+    padding: 0;
+  }
+
+  .profile-trigger img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .profile-trigger:hover {
+    border-color: rgba(255,255,255,0.35);
+  }
+
+  .profile-dropdown {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    background: var(--bg-header);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    min-width: 190px;
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+    z-index: 100;
+  }
+
+  .profile-dropdown.open {
+    display: flex;
+  }
+
+  .profile-dropdown a,
+  .profile-dropdown button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text-light);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .profile-dropdown a:hover,
+  .profile-dropdown button:hover {
+    background: rgba(255,255,255,0.08);
+  }
+
+  .profile-dropdown .divider {
+    height: 1px;
+    background: var(--border-soft);
+    margin: 4px 0;
+  }
 </style>
+
 </head>
 <body>
 
   <!-- Navbar -->
   <div class="navbar">
-    <form method="POST" action="{{ route('order-fulfillment.logout') }}" style="display:inline;">
-      @csrf
-      <button type="submit" class="brand brand-logo" style="background:none;border:none;padding:0;font:inherit;">
-        <img class="logo" src="{{ asset('orderfulfillment/logo/Nexora_Logo_Transparent.png') }}" alt="Nexora Logo">
-        <div class="brand-text">
-            <div class="title">NEXORA</div>
-            <div class="subtitle">ENTERPRISE RESOURCE PLANNING</div>
+    <div class="brand brand-logo">
+      <img class="logo" src="{{ asset('orderfulfillment/logo/Nexora_Logo_Transparent.png') }}" alt="Nexora Logo">
+      <div class="brand-text">
+          <div class="title">NEXORA</div>
+          <div class="subtitle">ENTERPRISE RESOURCE PLANNING</div>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <div class="nav-links">
+        <a href="{{ route('order-fulfillment.dashboard') }}" class="active">Dashboard</a>
+        <a href="{{ route('order-fulfillment.orders') }}">Orders</a>
+        <a href="{{ route('order-fulfillment.packing') }}">Packing</a>
+        <a href="{{ route('order-fulfillment.shipping') }}">Shipping</a>
+        <a href="{{ route('order-fulfillment.return') }}">Returns</a>
+      </div>
+      <div class="nav-divider"></div>
+      <div class="profile-menu" id="profileMenu">
+        <button type="button" class="profile-trigger" id="profileTrigger" aria-label="Account menu">
+          <img src="{{ asset('orderfulfillment/logo/pf.png') }}" alt="Profile">
+        </button>
+        <div class="profile-dropdown" id="profileDropdown">
+          <a href="{{ route('order-fulfillment.dashboard') }}">Employee Dashboard</a>
+          <div class="divider"></div>
+          <form method="POST" action="{{ route('order-fulfillment.logout') }}" style="margin:0;">
+            @csrf
+            <button type="submit">Log out</button>
+          </form>
         </div>
-      </button>
-    </form>
-    <div class="nav-links">
-      <a href="{{ route('order-fulfillment.dashboard') }}" class="active">Dashboard</a>
-      <a href="{{ route('order-fulfillment.orders') }}">Orders</a>
-      <a href="{{ route('order-fulfillment.packing') }}">Packing</a>
-      <a href="{{ route('order-fulfillment.shipping') }}">Shipping</a>
-      <a href="{{ route('order-fulfillment.return') }}">Returns</a>
+      </div>
     </div>
   </div>
 
   <!-- Stats -->
   <div class="stats-row">
     <div class="stat-card">
-      <div class="label">Orders received today</div>
-      <div class="value">{{ $ordersReceivedToday }}</div>
+      <div class="label">Total orders</div>
+      <div class="value">{{ $totalOrders }}</div>
     </div>
     <div class="stat-card">
       <div class="label">In packing</div>
       <div class="value">{{ $inPackingCount }}</div>
     </div>
     <div class="stat-card">
-      <div class="label">Shipped today</div>
-      <div class="value">{{ $shippedTodayCount }}</div>
+      <div class="label">In shipping</div>
+      <div class="value">{{ $inShippingCount }}</div>
     </div>
     <div class="stat-card">
-      <div class="label">On-time delivery rate</div>
+      <div class="label">Delivery rate</div>
       <div class="value">{{ $onTimeRate }}%</div>
     </div>
   </div>
@@ -731,6 +814,30 @@
       }
 
       setInterval(poll, POLL_MS);
+    })();
+  </script>
+
+  <script>
+    (function () {
+      const menu = document.getElementById('profileMenu');
+      const trigger = document.getElementById('profileTrigger');
+      const dropdown = document.getElementById('profileDropdown');
+      if (!menu || !trigger || !dropdown) return;
+
+      trigger.addEventListener('click', function (e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!menu.contains(e.target)) {
+          dropdown.classList.remove('open');
+        }
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') dropdown.classList.remove('open');
+      });
     })();
   </script>
 
