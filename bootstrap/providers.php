@@ -9,7 +9,7 @@ spl_autoload_register(static function (string $class): void {
         'Modules\\Inventory\\' => __DIR__.'/../Modules/Inventory/app/',
         'Modules\\Procurement\\' => __DIR__.'/../Modules/Procurement/app/',
         'Modules\\OrderFulfillment\\' => __DIR__.'/../Modules/OrderFulfillment/app/',
-        'Modules\\Ecommerce\\' => __DIR__.'/../Modules/E-Commerce/Techforge/app/',
+        'Modules\\Ecommerce\\' => __DIR__.'/../Modules/E-Commerce/Store/app/',
         'Modules\\Manufacturing\\' => __DIR__.'/../Modules/Manufacturing/app/',
         'Modules\\Finance\\' => __DIR__.'/../Modules/Finance/app/',
         'Modules\\BusinessIntelligence\\' => __DIR__.'/../Modules/BusinessIntelligence/app/',
@@ -33,7 +33,7 @@ spl_autoload_register(static function (string $class): void {
 require_once __DIR__.'/../Modules/Inventory/app/Providers/InventoryServiceProvider.php';
 require_once __DIR__.'/../Modules/Procurement/app/Providers/ProcurementServiceProvider.php';
 require_once __DIR__.'/../Modules/OrderFulfillment/app/Providers/OrderFulfillmentServiceProvider.php';
-require_once __DIR__.'/../Modules/E-Commerce/Techforge/app/Providers/EcommerceServiceProvider.php';
+require_once __DIR__.'/../Modules/E-Commerce/Store/app/Providers/EcommerceServiceProvider.php';
 require_once __DIR__.'/../Modules/Manufacturing/app/Providers/ManufacturingServiceProvider.php';
 require_once __DIR__.'/../Modules/Finance/app/Providers/FinanceServiceProvider.php';
 require_once __DIR__.'/../Modules/BusinessIntelligence/app/Providers/BusinessIntelligenceServiceProvider.php';

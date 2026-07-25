@@ -31,9 +31,9 @@
             "Modules\\Inventory\\": "Modules/Inventory/app/",
             "Modules\\Procurement\\": "Modules/Procurement/app/",
             "Modules\\OrderFulfillment\\": "Modules/OrderFulfillment/app/",
-            "Modules\\Ecommerce\\": "Modules/E-Commerce/Techforge/app/",
-            "Modules\\Ecommerce\\Database\\Seeders\\": "Modules/E-Commerce/Techforge/database/seeders/",
-            "Modules\\Ecommerce\\Database\\Factories\\": "Modules/E-Commerce/Techforge/database/factories/",
+            "Modules\\Ecommerce\\": "Modules/E-Commerce/Store/app/",
+            "Modules\\Ecommerce\\Database\\Seeders\\": "Modules/E-Commerce/Store/database/seeders/",
+            "Modules\\Ecommerce\\Database\\Factories\\": "Modules/E-Commerce/Store/database/factories/",
             "Modules\\Manufacturing\\": "Modules/Manufacturing/app/",
             "Modules\\Finance\\": "Modules/Finance/app/",
             "Modules\\BusinessIntelligence\\": "Modules/BusinessIntelligence/app/"
