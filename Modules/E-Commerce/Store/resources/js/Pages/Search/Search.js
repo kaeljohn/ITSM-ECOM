@@ -126,7 +126,9 @@ function renderProducts(products) {
                         data-product-id="${config.id}"
                         data-name="${config.name}"
                         data-price="${config.price}"
-                        data-image="${imageUrl}">
+                        data-image="${imageUrl}"
+                        data-product-type="${config.bom_id ? 'bom_listing' : 'generic'}"
+                        data-configuration='${config.bom_id ? JSON.stringify({bom_id: parseInt(config.bom_id), listing_id: config.id}) : "null"}'>
                         <i class="ph-bold ph-shopping-cart"></i> Add to Cart
                     </button>
                 `;

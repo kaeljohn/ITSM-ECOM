@@ -220,6 +220,12 @@
 
 
 
+    <script>
+        window.ecommerce_routes = {
+            cart_add: '{{ route("ecommerce.cart.add", ["store" => $store]) }}',
+            cart_count: '{{ route("ecommerce.cart.count", ["store" => $store]) }}'
+        };
+    </script>
     @vite('Modules/E-Commerce/Store/resources/js/Common/Navbar.js')
     <!-- Mini Cart Drawer -->
     <div id="mini-cart-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[90] opacity-0 pointer-events-none transition-all duration-300" onclick="toggleMiniCart()"></div>
@@ -328,7 +334,7 @@
                 btn.innerHTML = '<i class="ph ph-spinner animate-spin text-lg"></i>';
             }
 
-            fetch('/cart/add', {
+            fetch('{{ route("ecommerce.cart.add", ["store" => $store]) }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -345,7 +351,12 @@
                     configuration: configuration
                 })
             })
-            .then(res => res.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     if (btn) {
@@ -366,6 +377,8 @@
                 } else if (btn) {
                     btn.innerHTML = originalContent;
                     btn.disabled = false;
+                    // Optionally, you can handle the failure case here, e.g., show an error message.
+                    // For now, it just reverts the button.
                 }
             })
             .catch(err => {
@@ -379,7 +392,7 @@
 
         // Fetch initial cart count on load
         document.addEventListener('DOMContentLoaded', () => {
-            fetch('/cart/count', {
+            fetch('{{ route("ecommerce.cart.count", ["store" => $store]) }}', {
                 headers: {
                     'Accept': 'application/json'
                 }

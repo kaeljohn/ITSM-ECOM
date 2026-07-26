@@ -19,7 +19,7 @@ class CartController extends Controller
             'quantity' => 'integer|min:1',
             'image_url' => 'nullable|string',
             'product_type' => 'nullable|string',
-            'configuration' => 'nullable|string',
+            'configuration' => 'nullable',
         ]);
 
         $productId = (string) $validated['product_id'];
@@ -29,6 +29,14 @@ class CartController extends Controller
         $imageUrl = $request->input('image_url', '');
         $productType = $request->input('product_type', 'generic');
         $configuration = $request->input('configuration');
+
+        // Normalize configuration: if it's a JSON string, decode to array for consistency
+        if (is_string($configuration)) {
+            $decoded = json_decode($configuration, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $configuration = $decoded;
+            }
+        }
 
         // Rely on the frontend payload for name and price since we have multiple distinct product tables
 
@@ -47,7 +55,7 @@ class CartController extends Controller
                     'quantity' => $quantity,
                     'price' => $price,
                     'image_url' => $imageUrl,
-                    'configuration' => $configuration
+                    'configuration' => $configuration,
                 ]);
             }
             

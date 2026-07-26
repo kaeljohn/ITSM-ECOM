@@ -77,7 +77,7 @@
             left: -20%;
             width: 70vw;
             height: 70vw;
-            background: radial-gradient(circle, rgba(255, 107, 0, 0.35) 0%, rgba(255, 107, 0, 0) 65%);
+            background: radial-gradient(circle, rgba({{ $primaryR }}, {{ $primaryG }}, {{ $primaryB }}, 0.35) 0%, rgba({{ $primaryR }}, {{ $primaryG }}, {{ $primaryB }}, 0) 65%);
             z-index: -1;
             pointer-events: none;
             animation: floatPulse1 20s ease-in-out infinite;
@@ -89,7 +89,7 @@
             right: -20%;
             width: 80vw;
             height: 80vw;
-            background: radial-gradient(circle, rgba(153, 0, 0, 0.4) 0%, rgba(153, 0, 0, 0) 65%);
+            background: radial-gradient(circle, rgba({{ max(0, $primaryR - 100) }}, {{ max(0, $primaryG - 100) }}, {{ max(0, $primaryB - 100) }}, 0.4) 0%, rgba({{ max(0, $primaryR - 100) }}, {{ max(0, $primaryG - 100) }}, {{ max(0, $primaryB - 100) }}, 0) 65%);
             z-index: -1;
             pointer-events: none;
             animation: floatPulse2 25s ease-in-out infinite;
@@ -181,7 +181,7 @@
                     <!-- Login Form -->
                     <div id="login-container" class="transition-all duration-500 w-full transform translate-x-0 opacity-100">
                         <div class="flex flex-col items-center mb-8">
-                            <div class="bg-gradient-to-br from-primary to-orange-400 w-12 h-12 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(255,107,0,0.4)] mb-4">
+                            <div class="bg-gradient-to-br from-primary to-primary w-12 h-12 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.4)] mb-4">
                                 <img src="{{ $logoUrl }}" alt="{{ $layout['brand_name'] ?? $storefrontName }} Logo" class="h-7 w-auto object-contain">
                             </div>
                             <h2 class="text-2xl font-bold text-white mb-1">Welcome Back</h2>
@@ -232,7 +232,7 @@
                                 <span class="text-xs text-gray-400 group-hover:text-gray-300 transition-colors select-none">Remember me for 30 days</span>
                             </label>
 
-                            <button type="submit" class="w-full bg-gradient-to-r from-primary to-[#ff8c33] hover:from-[#ff8c33] hover:to-primary text-white py-3.5 rounded-xl font-bold transition-all duration-300 shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:shadow-[0_0_25px_rgba(255,107,0,0.5)] hover:-translate-y-0.5 mt-2 flex items-center justify-center gap-2">
+                            <button type="submit" class="w-full bg-primary hover:brightness-[1.1] text-white py-3.5 rounded-xl font-bold transition-all duration-300 shadow-[0_0_15px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.3)] hover:shadow-[0_0_25px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.5)] hover:-translate-y-0.5 mt-2 flex items-center justify-center gap-2">
                                 Sign In <i class="ph-bold ph-sign-in"></i>
                             </button>
                         </form>
@@ -260,7 +260,7 @@
                     <!-- Register Form -->
                     <div id="register-container" class="absolute top-0 left-0 w-full transition-all duration-500 transform translate-x-full opacity-0 pointer-events-none">
                         <div class="flex flex-col items-center mb-8">
-                            <div class="bg-gradient-to-br from-primary to-orange-400 w-12 h-12 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(255,107,0,0.4)] mb-4">
+                            <div class="bg-gradient-to-br from-primary to-primary w-12 h-12 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.4)] mb-4">
                                 <i class="ph-fill ph-user-plus text-2xl text-white"></i>
                             </div>
                             <h2 class="text-2xl font-bold text-white mb-1">Create Account</h2>
@@ -296,7 +296,7 @@
                                 <span class="text-xs text-gray-400 group-hover:text-gray-300 transition-colors select-none">Remember me for 30 days</span>
                             </label>
 
-                            <button type="submit" class="w-full bg-gradient-to-r from-primary to-[#ff8c33] hover:from-[#ff8c33] hover:to-primary text-white py-3.5 rounded-xl font-bold transition-all duration-300 shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:shadow-[0_0_25px_rgba(255,107,0,0.5)] hover:-translate-y-0.5 mt-2 flex items-center justify-center gap-2">
+                            <button type="submit" class="w-full bg-primary hover:brightness-[1.1] text-white py-3.5 rounded-xl font-bold transition-all duration-300 shadow-[0_0_15px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.3)] hover:shadow-[0_0_25px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.5)] hover:-translate-y-0.5 mt-2 flex items-center justify-center gap-2">
                                 Continue <i class="ph-bold ph-arrow-right"></i>
                             </button>
                         </form>

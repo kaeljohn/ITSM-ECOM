@@ -23,6 +23,14 @@ class CartItem extends Model
         'configuration',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'configuration' => 'array',
+            'price' => 'decimal:2',
+        ];
+    }
+
     public function cart()
     {
         return $this->belongsTo(Cart::class);

@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\URL; // <-- 1. Add this import at the top
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Auth;
 use App\Auth\EcommerceAdminUserProvider;
 
@@ -14,7 +14,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Manually register the Ecommerce service provider because the
+        // module system only scans one level deep in Modules/ directories
+        // and the Store module lives at Modules/E-Commerce/Store/.
+        $this->app->register(\Modules\Ecommerce\Providers\EcommerceServiceProvider::class);
     }
 
     /**
@@ -26,7 +29,6 @@ class AppServiceProvider extends ServiceProvider
             return new EcommerceAdminUserProvider($app['hash'], $config['model']);
         });
 
-        // 2. Add this check to force HTTPS in production
         if (env('APP_ENV') !== 'local') {
             URL::forceScheme('https');
         }

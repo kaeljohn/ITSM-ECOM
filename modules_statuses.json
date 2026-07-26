@@ -3,7 +3,7 @@
     "Inventory": true,
     "Procurement": true,
     "OrderFulfillment": true,
-    "Ecommerce": true,
+    "Store": true,
     "Manufacturing": true,
     "Finance": true,
     "BusinessIntelligence": true

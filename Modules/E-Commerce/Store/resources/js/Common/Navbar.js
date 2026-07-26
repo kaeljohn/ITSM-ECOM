@@ -629,7 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initial cart count fetch
-    fetch('/cart/count')
+    fetch(window.ecommerce_routes.cart_count)
         .then(res => res.ok ? res.json() : null)
         .then(data => {
             if (data) updateCartCount(data.cart_count);
@@ -647,12 +647,14 @@ document.addEventListener('DOMContentLoaded', () => {
             let priceStr = btn.dataset.price || '0';
             const price = parseFloat(priceStr.replace(/[^0-9.-]+/g,"")); // Remove P, commas
             const imageUrl = btn.dataset.image || '';
+            const productType = btn.dataset.productType || 'generic';
+            const configuration = btn.dataset.configuration || null;
 
             const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
             btn.classList.add('opacity-50', 'cursor-wait');
 
-            fetch('/cart/add', {
+            fetch(window.ecommerce_routes.cart_add, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -664,10 +666,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     name: name,
                     price: price,
                     quantity: 1,
-                    image_url: imageUrl
+                    image_url: imageUrl,
+                    product_type: productType,
+                    configuration: configuration
                 })
             })
-            .then(res => res.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw errorData;
+                    }).catch(() => {
+                        throw new Error('Server returned an error: ' + response.status);
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 btn.classList.remove('opacity-50', 'cursor-wait');
                 if (data.success) {
@@ -701,8 +714,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             })
             .catch(err => {
-                console.error(err);
+                console.error('Error adding product to cart:', err);
                 btn.classList.remove('opacity-50', 'cursor-wait');
+                // You could add user-facing error feedback here
             });
     });
 

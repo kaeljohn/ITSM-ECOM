@@ -18,9 +18,14 @@ return new class extends Migration
         
         foreach ($tables as $table) {
             $tableName = $table->table_name;
-            // Since there is existing data containing invalid UUID representations, we drop the old values
-            // and forcefully convert the column to bigint to match the companies id.
-            DB::connection('ecommerce')->statement("ALTER TABLE \"$tableName\" ALTER COLUMN client_id TYPE bigint USING NULL");
+            Schema::connection('ecommerce')->table($tableName, function (Blueprint $t) use ($tableName) {
+                if (Schema::connection('ecommerce')->hasColumn($tableName, 'client_id')) {
+                    $t->dropColumn('client_id');
+                }
+            });
+            Schema::connection('ecommerce')->table($tableName, function (Blueprint $t) {
+                $t->unsignedBigInteger('client_id')->nullable()->index();
+            });
         }
     }
 
@@ -33,7 +38,7 @@ return new class extends Migration
         
         foreach ($tables as $table) {
             $tableName = $table->table_name;
-            DB::connection('ecommerce')->statement("ALTER TABLE \"$tableName\" ALTER COLUMN client_id TYPE uuid USING NULL");
+            DB::connection('ecommerce')->statement("ALTER TABLE \"$tableName\" ALTER COLUMN client_id TYPE uuid USING NULL::uuid");
         }
     }
 };

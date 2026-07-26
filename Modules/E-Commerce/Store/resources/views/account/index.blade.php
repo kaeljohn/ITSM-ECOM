@@ -23,6 +23,7 @@
     $primaryR = hexdec(substr($primaryClean, 0, 2));
     $primaryG = hexdec(substr($primaryClean, 2, 2));
     $primaryB = hexdec(substr($primaryClean, 4, 2));
+    $primaryShadow = "rgba($primaryR, $primaryG, $primaryB, 0.05)";
 
     $accentHex = $layout['accent_color'] ?? '#f59e0b';
     $accentClean = ltrim($accentHex, '#');
@@ -77,7 +78,7 @@
             left: -20%;
             width: 70vw;
             height: 70vw;
-            background: radial-gradient(circle, rgba(255, 107, 0, 0.35) 0%, rgba(255, 107, 0, 0) 65%);
+            background: radial-gradient(circle, rgba({{ $primaryR }}, {{ $primaryG }}, {{ $primaryB }}, 0.35) 0%, rgba({{ $primaryR }}, {{ $primaryG }}, {{ $primaryB }}, 0) 65%);
             z-index: -1;
             pointer-events: none;
             animation: floatPulse1 20s ease-in-out infinite;
@@ -89,7 +90,7 @@
             right: -20%;
             width: 80vw;
             height: 80vw;
-            background: radial-gradient(circle, rgba(153, 0, 0, 0.4) 0%, rgba(153, 0, 0, 0) 65%);
+            background: radial-gradient(circle, rgba({{ max(0, $primaryR - 100) }}, {{ max(0, $primaryG - 100) }}, {{ max(0, $primaryB - 100) }}, 0.4) 0%, rgba({{ max(0, $primaryR - 100) }}, {{ max(0, $primaryG - 100) }}, {{ max(0, $primaryB - 100) }}, 0) 65%);
             z-index: -1;
             pointer-events: none;
             animation: floatPulse2 25s ease-in-out infinite;
@@ -325,7 +326,7 @@
                                         <div class="relative flex items-center justify-center">
                                             <input type="radio" name="gender" value="male" class="peer sr-only" {{ (Auth::guard('ecommerce')->user()->gender ?? '') == 'male' ? 'checked' : '' }}>
                                             <div class="w-5 h-5 rounded-full border-2 border-gray-600 peer-checked:border-primary transition-colors"></div>
-                                            <div class="w-2.5 h-2.5 bg-primary rounded-full absolute scale-0 peer-checked:scale-100 transition-transform shadow-[0_0_8px_rgba(255,107,0,0.8)]"></div>
+                                            <div class="w-2.5 h-2.5 bg-primary rounded-full absolute scale-0 peer-checked:scale-100 transition-transform shadow-[0_0_8px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.8)]"></div>
                                         </div>
                                         <span class="text-sm font-medium text-gray-400 group-hover:text-white transition-colors">Male</span>
                                     </label>
@@ -333,7 +334,7 @@
                                         <div class="relative flex items-center justify-center">
                                             <input type="radio" name="gender" value="female" class="peer sr-only" {{ (Auth::guard('ecommerce')->user()->gender ?? '') == 'female' ? 'checked' : '' }}>
                                             <div class="w-5 h-5 rounded-full border-2 border-gray-600 peer-checked:border-primary transition-colors"></div>
-                                            <div class="w-2.5 h-2.5 bg-primary rounded-full absolute scale-0 peer-checked:scale-100 transition-transform shadow-[0_0_8px_rgba(255,107,0,0.8)]"></div>
+                                            <div class="w-2.5 h-2.5 bg-primary rounded-full absolute scale-0 peer-checked:scale-100 transition-transform shadow-[0_0_8px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.8)]"></div>
                                         </div>
                                         <span class="text-sm font-medium text-gray-400 group-hover:text-white transition-colors">Female</span>
                                     </label>
@@ -341,7 +342,7 @@
                                         <div class="relative flex items-center justify-center">
                                             <input type="radio" name="gender" value="other" class="peer sr-only" {{ (Auth::guard('ecommerce')->user()->gender ?? '') == 'other' ? 'checked' : '' }}>
                                             <div class="w-5 h-5 rounded-full border-2 border-gray-600 peer-checked:border-primary transition-colors"></div>
-                                            <div class="w-2.5 h-2.5 bg-primary rounded-full absolute scale-0 peer-checked:scale-100 transition-transform shadow-[0_0_8px_rgba(255,107,0,0.8)]"></div>
+                                            <div class="w-2.5 h-2.5 bg-primary rounded-full absolute scale-0 peer-checked:scale-100 transition-transform shadow-[0_0_8px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.8)]"></div>
                                         </div>
                                         <span class="text-sm font-medium text-gray-400 group-hover:text-white transition-colors">Other</span>
                                     </label>
@@ -383,7 +384,7 @@
                             </div>
 
                             <div class="pt-6 flex justify-start">
-                                <button type="submit" class="bg-gradient-to-r from-primary to-[#ff8c33] hover:from-[#ff8c33] hover:to-primary text-white px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:shadow-[0_0_25px_rgba(255,107,0,0.5)] transform hover:-translate-y-0.5">
+                                <button type="submit" class="bg-primary hover:from-primary hover:to-primary text-white px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.3)] hover:shadow-[0_0_25px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.5)] transform hover:-translate-y-0.5">
                                     Save Changes
                                 </button>
                             </div>
@@ -418,7 +419,7 @@
                     <!-- PANE: BANK & CARDS -->
                     <div id="pane-bank-cards" class="content-pane hidden">
                         <div class="flex items-center justify-end mb-6 relative z-10">
-                            <button onclick="openModal('add-card-modal')" class="bg-primary hover:bg-[#ff8c33] text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg flex items-center gap-2 whitespace-nowrap">
+                            <button onclick="openModal('add-card-modal')" class="bg-primary hover:brightness-[1.1] text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg flex items-center gap-2 whitespace-nowrap">
                                 <i class="ph-bold ph-plus"></i> Add New Card
                             </button>
                         </div>
@@ -564,14 +565,18 @@
                     <!-- PANE: ADDRESSES -->
                     <div id="pane-addresses" class="content-pane hidden">
                         <div class="flex items-center justify-end mb-6 relative z-10">
-                            <button onclick="openAddAddressModal()" class="bg-primary hover:bg-[#ff8c33] text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg flex items-center gap-2 whitespace-nowrap">
+                            <button onclick="openAddAddressModal()" class="bg-primary hover:brightness-[1.1] text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg flex items-center gap-2 whitespace-nowrap">
                                 <i class="ph-bold ph-plus"></i> Add New Address
                             </button>
                         </div>
                         
                         <div class="flex flex-col gap-4 mt-4">
                             @forelse($addresses as $address)
-                            <div class="{{ $address->is_default ? 'bg-[#13131a] border-primary/30 shadow-[0_4px_20px_rgba(255,107,0,0.05)]' : 'bg-[#1a1a1a] border-white/5 hover:border-white/10' }} border rounded-xl p-5 md:p-6 transition-all group">
+                            @if($address->is_default)
+                            <div class="bg-[#13131a] border-primary/30 border rounded-xl p-5 md:p-6 transition-all group" style="box-shadow: 0 4px 20px {{ $primaryShadow }}">
+                            @else
+                            <div class="bg-[#1a1a1a] border-white/5 hover:border-white/10 border rounded-xl p-5 md:p-6 transition-all group">
+                            @endif
                                 <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
                                     <div class="flex-1">
                                         <div class="flex items-center gap-3 mb-2">
@@ -593,7 +598,7 @@
                                     <div class="flex flex-col items-start gap-4 md:items-end">
                                         <div class="flex items-center gap-4">
                                             <!-- Edit Address -->
-                                            <button type="button" onclick="openEditAddressModal({{ $address->toJson() }})" class="{{ $address->is_default ? 'text-primary hover:text-[#ff8c33]' : 'text-blue-400 hover:text-blue-300' }} p-1 text-lg transition-colors" title="Edit">
+                                            <button type="button" onclick="openEditAddressModal({{ $address->toJson() }})" class="{{ $address->is_default ? 'text-primary hover:text-primary' : 'text-blue-400 hover:text-blue-300' }} p-1 text-lg transition-colors" title="Edit">
                                                 <i class="ph-bold ph-pencil-simple"></i>
                                             </button>
                                             
@@ -680,7 +685,7 @@
                                     <label class="text-sm text-gray-400 font-medium shrink-0">Confirm New Password</label>
                                     <input type="password" placeholder="••••••••" class="w-full bg-black/40 border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary focus:bg-black/60 rounded-xl px-4 py-2.5 text-sm text-white transition-all outline-none placeholder-gray-600">
                                 </div>
-                                <button class="mt-6 bg-gradient-to-r from-primary to-[#ff8c33] hover:from-[#ff8c33] hover:to-primary text-white w-full py-3 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:shadow-[0_0_25px_rgba(255,107,0,0.5)] transform hover:-translate-y-0.5">
+                                <button class="mt-6 bg-primary hover:from-primary hover:to-primary text-white w-full py-3 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.3)] hover:shadow-[0_0_25px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.5)] transform hover:-translate-y-0.5">
                                     Update Password
                                 </button>
                             </div>
@@ -854,7 +859,7 @@
                                                 
                                                 <div class="relative pt-4 pb-2">
                                                     <div class="absolute top-6 left-[10%] right-[10%] h-1 bg-white/10 rounded-full"></div>
-                                                    <div class="absolute top-6 left-[10%] h-1 bg-gradient-to-r from-[#ff5100] to-primary rounded-full transition-all duration-500" style="width: calc(${barWidth} * 0.8);"></div>
+                                                    <div class="absolute top-6 left-[10%] h-1 bg-primary rounded-full transition-all duration-500" style="width: calc(${barWidth} * 0.8);"></div>
                                                     
                                                     <div class="flex justify-between relative z-10 text-[10px] uppercase font-bold">
                                                         <div class="flex flex-col items-center gap-1.5 ${stepIndex >= 1 ? 'text-primary' : 'text-gray-500'}">
@@ -926,7 +931,7 @@
                                                 </div>
                                                 <div class="flex justify-between text-base font-black text-white pt-2 border-t border-white/10">
                                                     <span>Total Paid</span>
-                                                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-[#ff8c33]">₱${Number(order.total || 0).toLocaleString()}</span>
+                                                    <span class="text-transparent bg-clip-text bg-primary">₱${Number(order.total || 0).toLocaleString()}</span>
                                                 </div>
                                             </div>
                                         `;
@@ -1061,11 +1066,11 @@
                                         ? 'bg-red-500' 
                                         : ($status === 'DELIVERED' || $status === 'COMPLETED' 
                                             ? 'bg-gradient-to-r from-green-500 to-emerald-400' 
-                                            : 'bg-gradient-to-r from-[#ff5100] to-primary');
+                                            : 'bg-primary');
                                 @endphp
 
                                 <!-- Order Card -->
-                                <div class="order-history-card group relative bg-[#0f0f0f] border border-white/[0.06] rounded-2xl overflow-hidden transition-all duration-300 hover:border-primary/30 hover:shadow-[0_0_30px_rgba(255,107,0,0.08)]" data-category="{{ $filterCat }}" data-order-id="{{ $order->id }}">
+                                <div class="order-history-card group relative bg-[#0f0f0f] border border-white/[0.06] rounded-2xl overflow-hidden transition-all duration-300 hover:border-primary/30 hover:shadow-[0_0_30px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.08)]" data-category="{{ $filterCat }}" data-order-id="{{ $order->id }}">
                                     
                                     <!-- Top Gradient Accent -->
                                     <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -1105,7 +1110,7 @@
 
                                             <!-- Right: Price & Badge -->
                                             <div class="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-1.5 shrink-0">
-                                                <p class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-[#ff8c33]">₱{{ number_format($order->total, 2) }}</p>
+                                                <p class="text-lg font-black text-transparent bg-clip-text bg-primary">₱{{ number_format($order->total, 2) }}</p>
                                                 <span class="text-[10px] font-bold {{ $statusColorClass }} border px-2 py-0.5 rounded-md uppercase tracking-wider">
                                                     {{ $badgeText }}
                                                 </span>
@@ -1156,7 +1161,7 @@
                                     </div>
                                     <h3 class="text-lg font-bold text-white mb-2">No Order History Found</h3>
                                     <p class="text-gray-500 text-sm max-w-xs">When you place orders, your complete order history and real-time build tracking will appear here.</p>
-                                    <a href="{{ route('ecommerce.prebuilt-pcs') }}" class="mt-6 bg-gradient-to-r from-primary to-[#ff8c33] hover:from-[#ff8c33] hover:to-primary text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 transform hover:-translate-y-0.5">
+                                    <a href="{{ route('ecommerce.prebuilt-pcs') }}" class="mt-6 bg-primary hover:from-primary hover:to-primary text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 transform hover:-translate-y-0.5">
                                         Browse PCs & Parts
                                     </a>
                                 </div>
@@ -1180,7 +1185,7 @@
                             <h3 class="text-white font-bold whitespace-nowrap flex items-center"><i class="ph-bold ph-plus-circle text-primary text-xl mr-2"></i>Add Voucher</h3>
                             <div class="flex items-center w-full gap-2">
                                 <input type="text" placeholder="Enter voucher code" class="flex-1 bg-black/40 border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary focus:bg-black/60 rounded-xl px-4 py-3 text-sm text-white transition-all outline-none placeholder-gray-600 font-mono uppercase tracking-widest">
-                                <button class="bg-primary hover:bg-[#ff8c33] text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg whitespace-nowrap">
+                                <button class="bg-primary hover:brightness-[1.1] text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-lg whitespace-nowrap">
                                     Apply
                                 </button>
                             </div>
@@ -1192,7 +1197,7 @@
                             <div class="relative flex bg-[#1a1a1a] border border-white/5 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all hover:border-primary/30 group overflow-hidden">
                                 
                                 <!-- Left Logo/Color Section -->
-                                <div class="w-24 bg-gradient-to-br from-[#ff5100] to-primary flex flex-col items-center justify-center border-r-[3px] border-dashed border-[#1a1a1a] relative shrink-0">
+                                <div class="w-24 bg-primary flex flex-col items-center justify-center border-r-[3px] border-dashed border-[#1a1a1a] relative shrink-0">
                                     <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mb-1 backdrop-blur-sm shadow-inner">
                                         <i class="ph-bold ph-gift text-xl text-white"></i>
                                     </div>
@@ -1215,11 +1220,11 @@
                                     </div>
                                     
                                     <div class="flex items-center justify-between mt-4">
-                                        <div class="flex items-center gap-1.5 text-[10px] font-medium text-[#ff5100] bg-[#ff5100]/10 px-2 py-1 rounded border border-[#ff5100]/20">
+                                        <div class="flex items-center gap-1.5 text-[10px] font-medium text-primary bg-primary/10 px-2 py-1 rounded border border-primary/20">
                                             <i class="ph-fill ph-clock"></i> 7 days left
                                         </div>
                                         
-                                        <button class="bg-transparent border border-primary text-primary hover:bg-primary hover:text-white hover:shadow-[0_0_15px_rgba(255,107,0,0.4)] px-4 py-1.5 rounded-lg text-xs font-black transition-all uppercase tracking-wider">
+                                        <button class="bg-transparent border border-primary text-primary hover:bg-primary hover:text-white hover:shadow-[0_0_15px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.4)] px-4 py-1.5 rounded-lg text-xs font-black transition-all uppercase tracking-wider">
                                             Use
                                         </button>
                                     </div>
@@ -1230,7 +1235,7 @@
                             <div class="relative flex bg-[#1a1a1a] border border-white/5 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all hover:border-primary/30 group overflow-hidden opacity-50 grayscale hover:grayscale-0 hover:opacity-100 cursor-not-allowed">
                                 
                                 <!-- Left Logo/Color Section -->
-                                <div class="w-24 bg-gradient-to-br from-[#ff5100] to-primary flex flex-col items-center justify-center border-r-[3px] border-dashed border-[#1a1a1a] relative shrink-0">
+                                <div class="w-24 bg-primary flex flex-col items-center justify-center border-r-[3px] border-dashed border-[#1a1a1a] relative shrink-0">
                                     <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mb-1 backdrop-blur-sm shadow-inner">
                                         <i class="ph-bold ph-truck text-xl text-white"></i>
                                     </div>
@@ -1284,17 +1289,17 @@
                                 <div class="absolute inset-0 rounded-full border-[6px] border-white/5"></div>
                                 <!-- Progress arc (fake with clip/rotate) -->
                                 <svg class="absolute inset-0 w-full h-full -rotate-90 transform overflow-visible" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="46" fill="none" stroke="url(#forge-gradient)" stroke-width="8" stroke-dasharray="289" stroke-dashoffset="144" class="transition-all duration-1000 ease-out drop-shadow-[0_0_8px_rgba(255,107,0,0.6)]"></circle>
+                                    <circle cx="50" cy="50" r="46" fill="none" stroke="url(#forge-gradient)" stroke-width="8" stroke-dasharray="289" stroke-dashoffset="144" class="transition-all duration-1000 ease-out drop-shadow-[0_0_8px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.6)]"></circle>
                                     <defs>
                                         <linearGradient id="forge-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                            <stop offset="0%" stop-color="#ff5100" />
-                                            <stop offset="100%" stop-color="#ff8c33" />
+                                            <stop offset="0%" stop-color="{{ $primaryHex }}" />
+                                            <stop offset="100%" stop-color="{{ $primaryHex }}" />
                                         </linearGradient>
                                     </defs>
                                 </svg>
                                 
                                 <div class="w-24 h-24 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] rounded-full flex flex-col items-center justify-center border-2 border-white/10 relative z-10">
-                                    <i class="ph-fill ph-coins text-3xl text-primary mb-1 shadow-[0_0_15px_rgba(255,107,0,0.5)]"></i>
+                                    <i class="ph-fill ph-coins text-3xl text-primary mb-1 shadow-[0_0_15px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.5)]"></i>
                                 </div>
                             </div>
                             <h3 class="text-4xl font-black text-white mb-1 tracking-tight">500 <span class="text-primary text-xl">FP</span></h3>
@@ -1310,7 +1315,7 @@
                                     <span>Gold (5,000)</span>
                                 </div>
                                 <div class="h-2 w-full bg-white/10 rounded-full relative overflow-hidden">
-                                    <div class="absolute top-0 left-0 h-full w-1/2 bg-gradient-to-r from-[#ff5100] to-primary rounded-full shadow-[0_0_10px_rgba(255,107,0,0.5)]"></div>
+                                    <div class="absolute top-0 left-0 h-full w-1/2 bg-primary rounded-full shadow-[0_0_10px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.5)]"></div>
                                 </div>
                                 <p class="text-xs text-primary mt-3 font-medium">Earn 500 more FP to unlock Silver Tier rewards!</p>
                             </div>
@@ -1521,7 +1526,7 @@
                                     <input type="text" name="cardholder_name" placeholder="JOHN DOE" required class="w-full bg-black/40 border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary focus:bg-black/60 rounded-xl px-4 py-3 text-sm text-white transition-all outline-none uppercase font-mono tracking-wider">
                                     <span class="error-msg text-red-500 text-xs font-mono font-bold hidden" data-error-for="cardholder_name"></span>
                                 </div>
-                                <button type="submit" class="mt-4 bg-gradient-to-r from-primary to-[#ff8c33] hover:from-[#ff8c33] hover:to-primary text-white w-full py-3 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:shadow-[0_0_25px_rgba(255,107,0,0.5)] flex justify-center items-center gap-2">
+                                <button type="submit" class="mt-4 bg-primary hover:from-primary hover:to-primary text-white w-full py-3 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.3)] hover:shadow-[0_0_25px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.5)] flex justify-center items-center gap-2">
                                     <i class="ph-bold ph-lock"></i> Save Card Securely
                                 </button>
                                 
@@ -1650,7 +1655,7 @@
                                     <label class="text-xs font-bold text-gray-400 uppercase tracking-wider font-mono">Account Number</label>
                                     <input type="text" name="account_number" placeholder="0000 0000 0000" required class="w-full bg-black/40 border border-white/10 focus:border-primary focus:ring-1 focus:ring-primary focus:bg-black/60 rounded-xl px-4 py-3 text-sm text-white transition-all outline-none font-mono">
                                 </div>
-                                <button type="submit" class="mt-4 bg-[#1a1a1a] hover:bg-white/10 border border-white/10 text-white w-full py-3 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(255,107,0,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.1)]">
+                                <button type="submit" class="mt-4 bg-[#1a1a1a] hover:bg-white/10 border border-white/10 text-white w-full py-3 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.1)]">
                                     Save Bank Account
                                 </button>
                             </div>
@@ -1662,13 +1667,13 @@
                 @if (session('success'))
                 <div id="success-modal" class="fixed inset-0 z-[9999] flex items-center justify-center">
                     <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeModal('success-modal')"></div>
-                    <div class="relative bg-[#13131a] border border-primary/30 rounded-2xl p-8 w-full max-w-sm shadow-[0_0_50px_rgba(255,107,0,0.3)] transform scale-100 opacity-100 transition-all duration-300 text-center flex flex-col items-center">
-                        <div class="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(255,107,0,0.4)]">
+                    <div class="relative bg-[#13131a] border border-primary/30 rounded-2xl p-8 w-full max-w-sm shadow-[0_0_50px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.3)] transform scale-100 opacity-100 transition-all duration-300 text-center flex flex-col items-center">
+                        <div class="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.4)]">
                             <i class="ph-bold ph-check text-3xl text-primary"></i>
                         </div>
                         <h3 class="text-xl font-black text-white mb-2 font-mono uppercase tracking-widest">Success!</h3>
                         <p class="text-sm text-gray-400 mb-6 font-mono">{{ session('success') }}</p>
-                        <button onclick="closeModal('success-modal')" class="bg-primary hover:bg-[#ff8c33] text-white px-8 py-2.5 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:shadow-[0_0_25px_rgba(255,107,0,0.5)] w-full font-mono uppercase">
+                        <button onclick="closeModal('success-modal')" class="bg-primary hover:brightness-[1.1] text-white px-8 py-2.5 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.3)] hover:shadow-[0_0_25px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.5)] w-full font-mono uppercase">
                             Close
                         </button>
                     </div>
@@ -1700,7 +1705,7 @@
                                     <span class="error-msg text-red-500 text-xs font-mono font-bold hidden" data-error-for="expiry_date"></span>
                                 </div>
                                 <div class="mt-4 pt-4 border-t border-white/10">
-                                    <button type="submit" class="bg-primary hover:bg-[#ff8c33] text-white px-8 py-3 rounded-xl text-sm font-bold transition-all w-full flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:shadow-[0_0_25px_rgba(255,107,0,0.5)] font-mono uppercase tracking-wider">
+                                    <button type="submit" class="bg-primary hover:brightness-[1.1] text-white px-8 py-3 rounded-xl text-sm font-bold transition-all w-full flex items-center justify-center gap-2 shadow-[0_0_15px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.3)] hover:shadow-[0_0_25px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.5)] font-mono uppercase tracking-wider">
                                         <i class="ph-bold ph-floppy-disk"></i> Save Changes
                                     </button>
                                 </div>
@@ -1861,7 +1866,7 @@
                                     </div>
                                 </div>
 
-                                <button type="submit" class="mt-2 bg-gradient-to-r from-primary to-[#ff8c33] hover:from-[#ff8c33] hover:to-primary text-white w-full py-2.5 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:shadow-[0_0_25px_rgba(255,107,0,0.5)]">
+                                <button type="submit" class="mt-2 bg-primary hover:from-primary hover:to-primary text-white w-full py-2.5 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.3)] hover:shadow-[0_0_25px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.5)]">
                                     Save Address
                                 </button>
                             </div>
@@ -1902,7 +1907,7 @@
                         
                         openModal('add-address-modal');
                         
-                        // Reset map
+                        // Reset map (will be initialized by MutationObserver if not yet loaded)
                         if (window.map) {
                             const defaultLocation = [14.5995, 120.9842];
                             window.map.setView(defaultLocation, 13);
@@ -1957,7 +1962,7 @@
 
                         openModal('add-address-modal');
                         
-                        // Pan map to existing coordinates
+                        // Pan map to existing coordinates (map is initialized by MutationObserver on modal open)
                         setTimeout(() => {
                             if (window.map && address.latitude && address.longitude) {
                                 const lat = parseFloat(address.latitude);
@@ -1965,7 +1970,7 @@
                                 window.map.setView([lat, lon], 15);
                                 if (window.marker) window.marker.setLatLng([lat, lon]);
                             }
-                        }, 250); // wait for modal animation
+                        }, 500); // wait for modal animation + map init
                     };
 
                     window.openModal = function(id) {
@@ -2152,7 +2157,7 @@
     @vite(['Modules/E-Commerce/Store/resources/js/Common/Preloader.js', 'Modules/E-Commerce/Store/resources/js/Common/AmbientEffects.js'])
 
     <!-- Global Toast Notification -->
-    <div id="toast-notification" class="fixed bottom-6 right-6 z-[200] transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 bg-[#13131a] border border-primary/30 shadow-[0_0_20px_rgba(255,107,0,0.2)] rounded-xl px-5 py-4 pointer-events-none">
+    <div id="toast-notification" class="fixed bottom-6 right-6 z-[200] transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 bg-[#13131a] border border-primary/30 shadow-[0_0_20px_rgba({{ $primaryR }},{{ $primaryG }},{{ $primaryB }},0.2)] rounded-xl px-5 py-4 pointer-events-none">
         <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
             <i class="ph-fill ph-check-circle text-primary text-xl"></i>
         </div>
@@ -2319,60 +2324,92 @@
         }
 
         // --- Leaflet Maps Logic (Free Alternative) ---
-        let map;
-        let marker;
+        window.map = null;
+        window.marker = null;
+        window.leafletLoaded = false;
+        window.leafletLoading = false;
 
-        // Load Leaflet CSS and JS dynamically
-        if (!document.getElementById('leaflet-css')) {
-            const css = document.createElement('link');
-            css.id = 'leaflet-css';
-            css.rel = 'stylesheet';
-            css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-            document.head.appendChild(css);
-        }
+        function ensureLeafletLoaded(callback) {
+            if (window.L && window.leafletLoaded) {
+                callback();
+                return;
+            }
+            if (window.leafletLoading) {
+                // Already loading, wait for it
+                const checkInterval = setInterval(() => {
+                    if (window.L && window.leafletLoaded) {
+                        clearInterval(checkInterval);
+                        callback();
+                    }
+                }, 100);
+                return;
+            }
+            window.leafletLoading = true;
 
-        if (!document.getElementById('leaflet-script')) {
-            const script = document.createElement('script');
-            script.id = 'leaflet-script';
-            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-            script.onload = initMap;
-            document.head.appendChild(script);
-        } else if (window.L) {
-            initMap();
+            // Load Leaflet CSS
+            if (!document.getElementById('leaflet-css')) {
+                const css = document.createElement('link');
+                css.id = 'leaflet-css';
+                css.rel = 'stylesheet';
+                css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                document.head.appendChild(css);
+            }
+
+            // Load Leaflet JS
+            if (!document.getElementById('leaflet-script')) {
+                const script = document.createElement('script');
+                script.id = 'leaflet-script';
+                script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                script.onload = function() {
+                    window.leafletLoaded = true;
+                    callback();
+                };
+                document.head.appendChild(script);
+            } else if (window.L) {
+                window.leafletLoaded = true;
+                callback();
+            }
         }
 
         function initMap() {
-            if (map) return;
+            if (window.map) {
+                // Already initialized — just invalidate size
+                setTimeout(() => { window.map.invalidateSize(); }, 100);
+                return;
+            }
             const defaultLocation = [14.5995, 120.9842]; // Manila
             
-            map = L.map('addressMap').setView(defaultLocation, 13);
+            window.map = L.map('addressMap').setView(defaultLocation, 13);
             
             // Use CartoDB Dark Matter tile layer for dark theme
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
                 maxZoom: 19
-            }).addTo(map);
+            }).addTo(window.map);
 
-            marker = L.marker(defaultLocation, { draggable: true }).addTo(map);
+            window.marker = L.marker(defaultLocation, { draggable: true }).addTo(window.map);
 
             document.getElementById("latitude").value = defaultLocation[0];
             document.getElementById("longitude").value = defaultLocation[1];
 
-            marker.on('dragend', function(event) {
-                const position = marker.getLatLng();
+            window.marker.on('dragend', function(event) {
+                const position = window.marker.getLatLng();
                 document.getElementById("latitude").value = position.lat;
                 document.getElementById("longitude").value = position.lng;
             });
 
-            map.on('click', function(event) {
-                marker.setLatLng(event.latlng);
+            window.map.on('click', function(event) {
+                window.marker.setLatLng(event.latlng);
                 document.getElementById("latitude").value = event.latlng.lat;
                 document.getElementById("longitude").value = event.latlng.lng;
             });
+
+            // Force a size recalculation after the container is visible
+            setTimeout(() => { window.map.invalidateSize(); }, 150);
         }
 
         function updateMapLocation(addressQuery) {
-            if (!map) return;
+            if (!window.map) return;
             // Nominatim Geocoding API (Free OpenStreetMap Geocoding)
             fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}`)
                 .then(res => res.json())
@@ -2380,8 +2417,8 @@
                     if (data && data.length > 0) {
                         const lat = parseFloat(data[0].lat);
                         const lon = parseFloat(data[0].lon);
-                        map.setView([lat, lon], 13);
-                        marker.setLatLng([lat, lon]);
+                        window.map.setView([lat, lon], 13);
+                        window.marker.setLatLng([lat, lon]);
                         document.getElementById("latitude").value = lat;
                         document.getElementById("longitude").value = lon;
                     }
@@ -2389,15 +2426,16 @@
                 .catch(err => console.error("Geocoding error:", err));
         }
         
-        // Re-initialize map when modal is opened to fix sizing issues
+        // Initialize map ONLY when the modal becomes visible
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 if (mutation.target.id === 'add-address-modal' && !mutation.target.classList.contains('hidden')) {
-                    if (map) {
-                        setTimeout(() => {
-                            map.invalidateSize();
-                        }, 200);
-                    }
+                    // Wait for the CSS transition (scale+opacity) to finish before init
+                    setTimeout(() => {
+                        ensureLeafletLoaded(function() {
+                            initMap();
+                        });
+                    }, 350);
                 }
             });
         });
@@ -2462,6 +2500,7 @@
                     submitBtn.innerHTML = originalBtnText;
                     submitBtn.disabled = false;
                 });
+            });
         }
     });
 
@@ -2552,8 +2591,7 @@
         }
     });
 
-    const userAccountOrders = @json($orders);
-
+    // Uses window.userAccountOrders already set in the Order History script block
     window.openOrderModal = window._openOrderModal = function(orderId) {
         const modal = document.getElementById('order-details-modal');
         const body = document.getElementById('modal-order-body');
@@ -2565,7 +2603,7 @@
         modal.classList.remove('hidden');
         modal.classList.add('flex');
 
-        const order = userAccountOrders.find(o => String(o.id) === String(orderId));
+        const order = (window.userAccountOrders || []).find(o => String(o.id) === String(orderId));
 
         if (!order) {
             body.innerHTML = `<p class="text-gray-400 text-center py-8">Order details could not be loaded.</p>`;
@@ -2645,7 +2683,7 @@
                 
                 <div class="relative pt-4 pb-2">
                     <div class="absolute top-6 left-[10%] right-[10%] h-1 bg-white/10 rounded-full"></div>
-                    <div class="absolute top-6 left-[10%] h-1 bg-gradient-to-r from-[#ff5100] to-primary rounded-full transition-all duration-500" style="width: calc(${barWidth} * 0.8);"></div>
+                    <div class="absolute top-6 left-[10%] h-1 bg-primary rounded-full transition-all duration-500" style="width: calc(${barWidth} * 0.8);"></div>
                     
                     <div class="flex justify-between relative z-10 text-[10px] uppercase font-bold">
                         <div class="flex flex-col items-center gap-1.5 ${stepIndex >= 1 ? 'text-primary' : 'text-gray-500'}">
@@ -2715,7 +2753,7 @@
                 </div>
                 <div class="flex justify-between text-base font-black text-white pt-2 border-t border-white/10">
                     <span>Total Paid</span>
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-[#ff8c33]">₱${Number(order.total || 0).toLocaleString()}</span>
+                    <span class="text-transparent bg-clip-text bg-primary">₱${Number(order.total || 0).toLocaleString()}</span>
                 </div>
             </div>
         `;

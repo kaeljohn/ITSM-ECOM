@@ -277,8 +277,7 @@
                             <button onclick="incrementQty()" class="w-10 h-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-r-xl transition-colors"><i class="ph-bold ph-plus"></i></button>
                         </div>
                         
-                        <!-- Add to Cart (Placeholder) -->
-                        <button type="button" id="main-add-to-cart" onclick="window.addToCart('{{ $product->id }}', '{{ addslashes($product->name) }}', {{ $product->price }}, '{{ $product->image_url }}', parseInt(document.getElementById('qty').value) || 1, 'prebuilt', null, event.currentTarget)" class="flex-1 h-14 bg-primary hover:bg-white hover:text-black text-white rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_0_20px_rgba(255,107,0,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] group">
+                        <button type="button" id="main-add-to-cart" onclick="window.addToCart('listing-{{ $product->id }}', '{{ addslashes($product->name) }}', {{ $product->price }}, '{{ $product->image_url }}', parseInt(document.getElementById('qty').value) || 1, '{{ $product->bom_id ? 'bom_listing' : 'generic' }}', {!! $product->bom_id ? "{ bom_id: " . (int)$product->bom_id . ", listing_id: '" . $product->id . "' }" : 'null' !!}, event.currentTarget)" class="flex-1 h-14 bg-primary hover:bg-white hover:text-black text-white rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_0_20px_rgba(255,107,0,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] group">
                             <i class="ph-bold ph-shopping-cart text-xl group-hover:scale-110 transition-transform"></i> Add To Cart
                         </button>
                     </div>
@@ -367,7 +366,7 @@
                             </div>
                         </div>
                     </div>
-                    <button type="button" class="bg-primary hover:bg-white hover:text-black text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest transition-all duration-300 shadow-[0_0_15px_rgba(255,107,0,0.4)]">
+                    <button type="button" onclick="window.addToCart('listing-{{ $product->id }}', '{{ addslashes($product->name) }}', {{ $product->price }}, '{{ $product->image_url }}', 1, '{{ $product->bom_id ? 'bom_listing' : 'generic' }}', {!! $product->bom_id ? "{ bom_id: " . (int)$product->bom_id . ", listing_id: '" . $product->id . "' }" : 'null' !!}, event.currentTarget)" class="bg-primary hover:bg-white hover:text-black text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest transition-all duration-300 shadow-[0_0_15px_rgba(255,107,0,0.4)]">
                         Add To Cart
                     </button>
                 </div>

@@ -56,6 +56,10 @@ return [
         'client_secret' => env('ECOMMERCE_GITHUB_CLIENT_SECRET'),
         'redirect' => env('ECOMMERCE_GITHUB_REDIRECT_URI', '/auth/github/callback'),
     ],
+
+    'my_service' => [
+        'api_key' => env('MY_SERVICE_API_KEY'),
+    ],
 ];
 
 

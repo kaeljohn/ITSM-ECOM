@@ -97,15 +97,15 @@ class AccountController extends Controller
                 $fakeOrder = new Order();
                 $fakeOrder->id = $fo->id;
                 $fakeOrder->user_id = $user->id;
-                $fakeOrder->total = $fo->product_amount;
-                $fakeOrder->status = strtolower($fo->status);
+                $fakeOrder->total = $fo->product_amount ?? 0;
+                $fakeOrder->status = strtolower($fo->status ?? 'NEW');
                 $fakeOrder->created_at = Carbon::parse($fo->created_at);
                 $fakeOrder->tracking_number = 'TF-' . strtoupper(substr(md5($fo->id), 0, 8));
 
                 $fakeItem = (object)[
-                    'name' => $fo->product_name,
-                    'price' => $fo->product_amount,
-                    'quantity' => $fo->qty
+                    'name' => $fo->product_name ?? 'Storefront order',
+                    'price' => $fo->product_amount ?? 0,
+                    'quantity' => $fo->qty ?? 1
                 ];
                 $fakeOrder->setRelation('items', collect([$fakeItem]));
 
@@ -219,16 +219,16 @@ class AccountController extends Controller
             $order = new Order();
             $order->id = $fo->id;
             $order->user_id = $user->id;
-            $order->total = $fo->product_amount;
-            $order->status = strtolower($fo->status);
-            $order->created_at = Carbon::parse($fo->created_at);
-            $order->tracking_number = 'TF-' . strtoupper(substr(md5($fo->id), 0, 8));
-            $order->shipping_address = ['address' => $fo->address, 'name' => $fo->customer_name];
-            
-            $fakeItem = (object)[
-                'name' => $fo->product_name,
-                'price' => $fo->product_amount,
-                'quantity' => $fo->qty,
+        $order->total = $fo->product_amount ?? 0;
+        $order->status = strtolower($fo->status ?? 'NEW');
+        $order->created_at = Carbon::parse($fo->created_at);
+        $order->tracking_number = 'TF-' . strtoupper(substr(md5($fo->id), 0, 8));
+        $order->shipping_address = ['address' => $fo->address ?? '', 'name' => $fo->customer_name ?? ''];
+        
+        $fakeItem = (object)[
+            'name' => $fo->product_name ?? 'Storefront order',
+            'price' => $fo->product_amount ?? 0,
+            'quantity' => $fo->qty ?? 1,
                 'configuration' => null,
             ];
             $order->setRelation('items', collect([$fakeItem]));

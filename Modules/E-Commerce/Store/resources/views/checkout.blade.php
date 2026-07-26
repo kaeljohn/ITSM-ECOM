@@ -162,7 +162,7 @@
             letter-spacing: 0.1em;
             color: #fff;
             text-transform: uppercase;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
         .section-title::before {
             content: '';
@@ -260,65 +260,52 @@
                 <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none"></div>
 
                 <!-- STEP 1: SHIPPING -->
-                <div id="step-1-content" class="space-y-8 relative z-10 animate-fade-in">
+                <div id="step-1-content" class="space-y-6 relative z-10 animate-fade-in">
                     
                     <!-- Dispatch Banner -->
                     <div class="bg-[#1a1a00] border border-[#ffaa00]/30 rounded-md p-4 flex items-center gap-3">
                         <i class="ph ph-clock text-[#ffaa00] text-xl"></i>
-                        <span class="text-sm text-gray-300">Order within <span class="text-[#ffaa00] font-bold code-font bg-[#ffaa00]/10 px-2 py-0.5 rounded">02:46:40</span> for same-day dispatch</span>
+                        <span class="text-sm text-gray-300">Select your delivery address and shipping method to continue</span>
                     </div>
-
-                    <!-- Contact Info -->
-                    <section>
-                        <div class="section-title">Contact Information</div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <div>
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 code-font">First Name</label>
-                                <input type="text" id="firstName" name="firstName" required class="form-input" value="{{ explode(' ', \Illuminate\Support\Facades\Auth::guard('ecommerce')->user()->name)[0] ?? '' }}">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Last Name</label>
-                                <input type="text" id="lastName" name="lastName" required class="form-input" value="{{ explode(' ', \Illuminate\Support\Facades\Auth::guard('ecommerce')->user()->name)[1] ?? '' }}">
-                            </div>
-                            <div class="sm:col-span-2">
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Email Address</label>
-                                <input type="email" required class="form-input" value="{{ \Illuminate\Support\Facades\Auth::guard('ecommerce')->user()->email }}" readonly>
-                            </div>
-                            <div class="sm:col-span-2">
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Phone Number</label>
-                                <input type="tel" id="phone" name="phone" required class="form-input" placeholder="+63 912 345 6789">
-                            </div>
-                        </div>
-                    </section>
 
                     <!-- Delivery Address -->
                     <section>
                         <div class="section-title">Delivery Address</div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <div class="sm:col-span-2">
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Street Address</label>
-                                <input type="text" id="address" name="address" required class="form-input">
-                            </div>
-                            <div class="sm:col-span-2">
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Apartment / Suite</label>
-                                <input type="text" name="apartment" class="form-input" placeholder="Optional">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">City</label>
-                                <input type="text" id="city" name="city" required class="form-input">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">State / Province</label>
-                                <input type="text" id="province" name="province" required class="form-input">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Zip Code</label>
-                                <input type="text" id="zip" name="zip" required class="form-input">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Country</label>
-                                <input type="text" name="country" required class="form-input" value="Philippines" readonly>
-                            </div>
+                        <div class="space-y-3" id="address-selector">
+                            @foreach($addresses as $addr)
+                            <label class="payment-option block cursor-pointer">
+                                <input type="radio" name="addressId" value="{{ $addr->id }}" class="sr-only" {{ $loop->first ? 'checked' : '' }}>
+                                <div class="border border-white/10 rounded-lg p-4 transition-colors {{ $loop->first ? 'bg-white/5 border-primary/50' : 'bg-white/[0.02] hover:bg-white/5' }}">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-4 h-4 mt-0.5 rounded-full border border-gray-500 flex items-center justify-center shrink-0">
+                                            <div class="radio-dot w-2 h-2 rounded-full {{ $loop->first ? 'bg-primary' : 'bg-transparent' }} transition-colors"></div>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <span class="font-bold text-white text-sm">{{ $addr->full_name ?? \Illuminate\Support\Facades\Auth::guard('ecommerce')->user()->name }}</span>
+                                                @if($addr->is_default)
+                                                    <span class="text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded uppercase tracking-widest">Default</span>
+                                                @endif
+                                                @if($addr->label)
+                                                    <span class="text-[9px] font-bold text-gray-400 bg-white/5 px-2 py-0.5 rounded uppercase tracking-widest">{{ $addr->label }}</span>
+                                                @endif
+                                            </div>
+                                            <p class="text-xs text-gray-400 code-font leading-relaxed">
+                                                {{ trim(($addr->detailed_address ?? '') . ', ' . ($addr->barangay ?? ''), ', ') }}
+                                            </p>
+                                            <p class="text-xs text-gray-500 code-font mt-1">
+                                                {{ $addr->city }}, {{ $addr->province }} {{ $addr->postal_code }}
+                                            </p>
+                                            @if($addr->phone_number)
+                                                <p class="text-xs text-gray-500 code-font mt-1">
+                                                    <i class="ph ph-phone text-gray-600"></i> {{ $addr->phone_number }}
+                                                </p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                            @endforeach
                         </div>
                     </section>
 
@@ -372,55 +359,62 @@
                     <section>
                         <div class="section-title">Payment Method</div>
                         <p class="text-sm text-gray-400 mb-4">All transactions are secure and encrypted.</p>
-                        <div class="space-y-3">
+                        <div class="space-y-3" id="payment-selector">
+                            @forelse($paymentMethods as $pm)
                             <label class="payment-option block cursor-pointer">
-                                <input type="radio" name="paymentMethod" value="credit_card" class="sr-only" checked>
-                                <div class="border border-white/10 rounded p-4 flex items-center justify-between transition-colors bg-white/5 hover:bg-white/10">
+                                <input type="radio" name="paymentMethod" value="{{ $pm->id }}" class="sr-only" {{ $loop->first ? 'checked' : '' }}>
+                                <div class="border border-white/10 rounded-lg p-4 flex items-center justify-between transition-colors {{ $loop->first ? 'bg-white/5 border-primary/50' : 'bg-white/[0.02] hover:bg-white/5' }}">
                                     <div class="flex items-center gap-4">
                                         <div class="w-4 h-4 rounded-full border border-gray-500 flex items-center justify-center">
-                                            <div class="radio-dot w-2 h-2 rounded-full bg-transparent transition-colors"></div>
+                                            <div class="radio-dot w-2 h-2 rounded-full {{ $loop->first ? 'bg-primary' : 'bg-transparent' }} transition-colors"></div>
                                         </div>
-                                        <span class="font-bold text-white text-sm">Credit / Debit Card</span>
+                                        <div>
+                                            <span class="font-bold text-white text-sm">{{ $pm->type }}</span>
+                                            @if($pm->provider)
+                                                <span class="text-gray-400 text-sm"> via {{ $pm->provider }}</span>
+                                            @endif
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <span class="text-xs text-gray-500 code-font">{{ $pm->account_number_mask ?? '****' }}</span>
+                                                @if($pm->expiry_date)
+                                                    <span class="text-xs text-gray-600">|</span>
+                                                    <span class="text-xs text-gray-500 code-font">Exp {{ $pm->expiry_date }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="flex gap-2 text-xl text-gray-400">
-                                        <i class="ph-fill ph-credit-card"></i>
+                                    <div class="flex items-center gap-3">
+                                        @if($pm->is_default)
+                                            <span class="text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded uppercase tracking-widest">Default</span>
+                                        @endif
+                                        <div class="text-xl text-gray-400">
+                                            @if(strtolower($pm->type) === 'credit card' || strtolower($pm->type) === 'debit card')
+                                                <i class="ph-fill ph-credit-card"></i>
+                                            @elseif(strtolower($pm->type) === 'gcash' || strtolower($pm->type) === 'maya')
+                                                <i class="ph-fill ph-wallet text-blue-500"></i>
+                                            @elseif(strtolower($pm->type) === 'paypal')
+                                                <i class="ph-fill ph-paypal-logo text-blue-400"></i>
+                                            @else
+                                                <i class="ph-fill ph-bank text-gray-400"></i>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             </label>
+                            @empty
+                            <div class="text-center py-6">
+                                <i class="ph ph-credit-card text-3xl text-gray-600 mb-3 block"></i>
+                                <p class="text-sm text-gray-400 mb-3">No payment methods saved yet.</p>
+                                <a href="{{ route('ecommerce.account.profile') }}" class="text-xs text-primary hover:underline font-bold uppercase tracking-widest">Add a payment method</a>
+                            </div>
+                            @endforelse
+
+                            <!-- Cash on Delivery always available -->
                             <label class="payment-option block cursor-pointer">
-                                <input type="radio" name="paymentMethod" value="gcash" class="sr-only">
-                                <div class="border border-white/10 rounded p-4 flex items-center justify-between transition-colors bg-white/5 hover:bg-white/10">
+                                <input type="radio" name="paymentMethod" value="cod" class="sr-only" {{ $paymentMethods->isEmpty() ? 'checked' : '' }}>
+                                <div class="border border-white/10 rounded-lg p-4 flex items-center justify-between transition-colors {{ $paymentMethods->isEmpty() ? 'bg-white/5 border-primary/50' : 'bg-white/[0.02] hover:bg-white/5' }}">
                                     <div class="flex items-center gap-4">
                                         <div class="w-4 h-4 rounded-full border border-gray-500 flex items-center justify-center">
-                                            <div class="radio-dot w-2 h-2 rounded-full bg-transparent transition-colors"></div>
-                                        </div>
-                                        <span class="font-bold text-white text-sm">GCash / Maya</span>
-                                    </div>
-                                    <div class="flex gap-2 text-xl text-blue-500">
-                                        <i class="ph-fill ph-wallet"></i>
-                                    </div>
-                                </div>
-                            </label>
-                            <label class="payment-option block cursor-pointer">
-                                <input type="radio" name="paymentMethod" value="paypal" class="sr-only">
-                                <div class="border border-white/10 rounded p-4 flex items-center justify-between transition-colors bg-white/5 hover:bg-white/10">
-                                    <div class="flex items-center gap-4">
-                                        <div class="w-4 h-4 rounded-full border border-gray-500 flex items-center justify-center">
-                                            <div class="radio-dot w-2 h-2 rounded-full bg-transparent transition-colors"></div>
-                                        </div>
-                                        <span class="font-bold text-white text-sm">PayPal</span>
-                                    </div>
-                                    <div class="flex gap-2 text-xl text-blue-400">
-                                        <i class="ph-fill ph-paypal-logo"></i>
-                                    </div>
-                                </div>
-                            </label>
-                            <label class="payment-option block cursor-pointer">
-                                <input type="radio" name="paymentMethod" value="cod" class="sr-only">
-                                <div class="border border-white/10 rounded p-4 flex items-center justify-between transition-colors bg-white/5 hover:bg-white/10">
-                                    <div class="flex items-center gap-4">
-                                        <div class="w-4 h-4 rounded-full border border-gray-500 flex items-center justify-center">
-                                            <div class="radio-dot w-2 h-2 rounded-full bg-transparent transition-colors"></div>
+                                            <div class="radio-dot w-2 h-2 rounded-full {{ $paymentMethods->isEmpty() ? 'bg-primary' : 'bg-transparent' }} transition-colors"></div>
                                         </div>
                                         <span class="font-bold text-white text-sm">Cash on Delivery</span>
                                     </div>
@@ -606,41 +600,44 @@
 
         const subtotal = {{ $subtotal }};
         let currentStep = 1;
-        
+
         function goToStep(step) {
-            // Basic validation before leaving step 1
+            // Validation before leaving step 1
             if (step === 2 && currentStep === 1) {
-                const requiredFields = ['firstName', 'lastName', 'phone', 'address', 'city', 'province', 'zip'];
-                let isValid = true;
-                requiredFields.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (!el.value) {
-                        el.classList.add('border-red-500');
-                        isValid = false;
-                    } else {
-                        el.classList.remove('border-red-500');
-                    }
-                });
-                
-                if (!isValid) {
-                    alert('Please fill in all required fields.');
+                const selectedAddress = document.querySelector('input[name="addressId"]:checked');
+                if (!selectedAddress) {
+                    alert('Please select a delivery address.');
                     return;
                 }
             }
             
             // Setup review data if going to step 3
             if (step === 3) {
-                const address = `${document.getElementById('address').value}, ${document.getElementById('city').value}, ${document.getElementById('province').value} ${document.getElementById('zip').value}`;
-                document.getElementById('review-address-text').textContent = address;
+                // Address review
+                const selectedAddress = document.querySelector('input[name="addressId"]:checked');
+                if (selectedAddress) {
+                    const label = selectedAddress.closest('label');
+                    const nameEl = label.querySelector('.font-bold.text-white.text-sm');
+                    const pEls = label.querySelectorAll('.code-font');
+                    const name = nameEl ? nameEl.textContent.trim() : '';
+                    const lines = [];
+                    pEls.forEach(el => lines.push(el.textContent.trim()));
+                    document.getElementById('review-address-text').textContent = [name, ...lines].filter(Boolean).join(' — ');
+                }
                 
-                const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
-                const paymentNames = {
-                    'credit_card': '<i class="ph-fill ph-credit-card"></i> Credit / Debit Card',
-                    'gcash': '<i class="ph-fill ph-wallet text-blue-500"></i> GCash / Maya',
-                    'paypal': '<i class="ph-fill ph-paypal-logo text-blue-400"></i> PayPal',
-                    'cod': '<i class="ph-fill ph-money text-green-500"></i> Cash on Delivery'
-                };
-                document.getElementById('review-payment-text').innerHTML = paymentNames[paymentMethod];
+                // Payment review
+                const paymentInput = document.querySelector('input[name="paymentMethod"]:checked');
+                if (paymentInput) {
+                    const val = paymentInput.value;
+                    if (val === 'cod') {
+                        document.getElementById('review-payment-text').innerHTML = '<i class="ph-fill ph-money text-green-500"></i> Cash on Delivery';
+                    } else {
+                        const pmLabel = paymentInput.closest('label');
+                        const pmText = pmLabel ? pmLabel.querySelector('.font-bold.text-white.text-sm') : null;
+                        const pmType = pmText ? pmText.textContent.trim() : 'Saved Payment Method';
+                        document.getElementById('review-payment-text').innerHTML = '<i class="ph-fill ph-credit-card"></i> ' + pmType;
+                    }
+                }
             }
 
             // Hide all steps

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
@@ -51,7 +52,7 @@ class ErpIntegrationService
             $totalQuantity = (int) $items->sum('quantity');
             $amount = (float) $order->total;
 
-            $this->createFulfillmentOrder($clientId, (string) $order->id, $customer, $productSummary, $totalQuantity, $amount, $order, $items);
+            $this->createFulfillmentOrder($clientId, $customer, $productSummary, $totalQuantity, $amount, $order, $items);
             $this->createManufacturingWorkOrder($clientId, (string) $order->id, $productSummary, $totalQuantity);
             $this->createProcurementRequisition($clientId, (string) $order->id, $productSummary, $totalQuantity, $amount);
             $this->createFinanceInvoice($clientId, (string) $order->id, $amount, (float) $order->shipping_fee, (string) $order->payment_status);
@@ -159,138 +160,242 @@ class ErpIntegrationService
         $this->recordAudit($clientId, 'inventory.item_deleted', 'inventory', ['item_id' => $item->id, 'sku' => $item->sku, 'name' => $item->name]);
     }
 
-    /** @return array<int, array{item_id:int,warehouse_id:int,quantity:int}> */
+    /**
+     * Reserve inventory for an ecommerce order.
+     *
+     * IMPORTANT: This method uses NO transaction wrapper at all.
+     * Each inventory operation is an independent, atomic SQL statement.
+     * This completely eliminates the PostgreSQL 25P02 (current transaction
+     * is aborted) cascade that occurs when a prior query inside a
+     * transaction fails and subsequent queries get rejected.
+     *
+     * Race-condition safety: the UPDATE uses
+     *   WHERE (stock - reserved_quantity) >= $allocated
+     * so concurrent requests naturally fail the WHERE clause rather than
+     * overselling. No SELECT ... FOR UPDATE is needed.
+     *
+     * @return array<int, array{item_id:int,warehouse_id:int,quantity:int}>
+     */
     private function reserveInventory(int $clientId, string $orderId, iterable $items): array
     {
         $inventory = DB::connection('inventory');
+        $reserved = [];
+        $requirements = [];
 
-        return $inventory->transaction(function () use ($inventory, $clientId, $orderId, $items): array {
-            $reserved = [];
-            $requirements = [];
+        // ── Phase 1: Build requirements (read-only, no transaction) ──────
+        foreach ($items as $line) {
+            $quantity = max(1, (int) $line->quantity);
 
-            foreach ($items as $line) {
-                $quantity = max(1, (int) $line->quantity);
+            if (($line->product_type ?? null) === 'bom_listing') {
+                $configuration = is_array($line->configuration ?? null)
+                    ? $line->configuration
+                    : json_decode((string) ($line->configuration ?? ''), true);
+                $bomId = (int) ($configuration['bom_id'] ?? 0);
+                $components = $bomId
+                    ? DB::connection('manufacturing')->table('product_bom_items')
+                        ->where('client_id', $clientId)->where('bom_id', $bomId)->get()
+                    : collect();
 
-                if (($line->product_type ?? null) === 'bom_listing') {
-                    $configuration = is_array($line->configuration ?? null)
-                        ? $line->configuration
-                        : json_decode((string) ($line->configuration ?? ''), true);
-                    $bomId = (int) ($configuration['bom_id'] ?? 0);
-                    $components = $bomId
-                        ? DB::connection('manufacturing')->table('product_bom_items')
-                            ->where('client_id', $clientId)->where('bom_id', $bomId)->get()
-                        : collect();
-
-                    if ($components->isEmpty()) {
-                        throw new RuntimeException("The Bill of Materials for '{$line->name}' is no longer available.");
-                    }
-
-                    foreach ($components as $component) {
-                        $itemId = (int) $component->inventory_item_id;
-                        $requirements[$itemId] = [
-                            'name' => (string) $component->item_name,
-                            'quantity' => ($requirements[$itemId]['quantity'] ?? 0)
-                                + ($quantity * max(1, (int) $component->quantity_required)),
-                        ];
-                    }
-
-                    continue;
+                if ($components->isEmpty()) {
+                    throw new RuntimeException("The Bill of Materials for '{$line->name}' is no longer available.");
                 }
 
-                $item = $inventory->table('items')
-                    ->where('client_id', $clientId)
-                    ->where(function ($query) use ($line): void {
-                        $query->where('sku', (string) $line->product_id)
-                            ->orWhereRaw('LOWER(name) = ?', [mb_strtolower((string) $line->name)]);
-                    })
-                    ->orderBy('id')
-                    ->first();
-
-                if (! $item) {
-                    throw new RuntimeException("Inventory item '{$line->name}' is not mapped for this client.");
+                foreach ($components as $component) {
+                    $itemId = (int) $component->inventory_item_id;
+                    $requirements[$itemId] = [
+                        'name' => (string) $component->item_name,
+                        'quantity' => ($requirements[$itemId]['quantity'] ?? 0)
+                            + ($quantity * max(1, (int) $component->quantity_required)),
+                    ];
                 }
 
-                $requirements[(int) $item->id] = [
-                    'name' => (string) $item->name,
-                    'quantity' => ($requirements[(int) $item->id]['quantity'] ?? 0) + $quantity,
-                ];
+                continue;
             }
 
-            foreach ($requirements as $itemId => $requirement) {
-                $existing = $inventory->table('order_reservations')
-                    ->where('client_id', $clientId)
-                    ->where('order_reference', $orderId)
-                    ->where('item_id', $itemId)
-                    ->where('status', 'reserved')
-                    ->exists();
+            $item = $inventory->table('items')
+                ->where('client_id', $clientId)
+                ->where(function ($query) use ($line): void {
+                    $query->where('sku', (string) $line->product_id)
+                        ->orWhereRaw('LOWER(name) = ?', [mb_strtolower((string) $line->name)]);
+                })
+                ->orderBy('id')
+                ->first();
 
-                if ($existing) {
+            if (! $item) {
+                throw new RuntimeException("Inventory item '{$line->name}' is not mapped for this client.");
+            }
+
+            $requirements[(int) $item->id] = [
+                'name' => (string) $item->name,
+                'quantity' => ($requirements[(int) $item->id]['quantity'] ?? 0) + $quantity,
+            ];
+        }
+
+        // ── Phase 2: Reserve via standalone atomic SQL statements ────────
+        // NO transaction wrapper. Each statement is independent.
+        foreach ($requirements as $itemId => $requirement) {
+            // Skip if already reserved for this order.
+            $hasReservation = $inventory->select(
+                'SELECT id FROM order_reservations WHERE client_id = ? AND order_reference = ? AND item_id = ? AND status = ? LIMIT 1',
+                [$clientId, $orderId, $itemId, 'reserved']
+            );
+            if (! empty($hasReservation)) {
+                continue;
+            }
+
+            // Check whether this component is tracked in inventory at all.
+            $hasStockLevel = $inventory->select(
+                'SELECT id FROM stock_levels WHERE client_id = ? AND item_id = ? LIMIT 1',
+                [$clientId, $itemId]
+            );
+            if (empty($hasStockLevel)) {
+                // Item not tracked — skip reservation, order proceeds.
+                continue;
+            }
+
+            // Read available stock (no lock).
+            $levels = $inventory->select(
+                'SELECT id, warehouse_id, stock, reserved_quantity FROM stock_levels WHERE client_id = ? AND item_id = ? AND (stock - reserved_quantity) > 0 ORDER BY id ASC',
+                [$clientId, $itemId]
+            );
+
+            $remaining = (int) $requirement['quantity'];
+            $now = now()->toDateTimeString();
+
+            foreach ($levels as $level) {
+                if ($remaining <= 0) {
+                    break;
+                }
+
+                $available = (int) $level->stock - (int) $level->reserved_quantity;
+                $allocated = min($remaining, $available);
+                if ($allocated < 1) {
                     continue;
                 }
 
-                $levels = $inventory->table('stock_levels')
-                    ->where('client_id', $clientId)
-                    ->where('item_id', $itemId)
-                    ->whereRaw('stock > reserved_quantity')
-                    ->orderBy('id')
-                    ->lockForUpdate()
-                    ->get();
+                // Atomic UPDATE: only increments if enough stock exists.
+                // DB::update() returns the number of affected rows (0 or 1).
+                // No transaction wrapper = no 25P02 cascade possible.
+                $affected = $inventory->update(
+                    'UPDATE stock_levels SET reserved_quantity = reserved_quantity + ?, updated_at = ? WHERE id = ? AND client_id = ? AND (stock - reserved_quantity) >= ?',
+                    [$allocated, $now, $level->id, $clientId, $allocated]
+                );
 
-                $available = $levels->sum(fn ($level) => (int) $level->stock - (int) $level->reserved_quantity);
-                if ($available < $requirement['quantity']) {
-                    throw new RuntimeException("Insufficient available inventory for '{$requirement['name']}'.");
+                if ($affected === 0) {
+                    // Race condition — another request took this stock.
+                    continue;
                 }
 
-                $remaining = (int) $requirement['quantity'];
-                foreach ($levels as $level) {
-                    if ($remaining === 0) {
-                        break;
-                    }
-
-                    $allocated = min($remaining, (int) $level->stock - (int) $level->reserved_quantity);
-                    if ($allocated < 1) {
-                        continue;
-                    }
-
-                    $inventory->table('stock_levels')->where('id', $level->id)->increment('reserved_quantity', $allocated, ['updated_at' => now()]);
+                // Record the reservation (standalone INSERT, no transaction).
+                try {
                     $inventory->table('order_reservations')->insert([
-                        'client_id' => $clientId, 'order_reference' => $orderId, 'source' => 'ecommerce',
-                        'item_id' => $itemId, 'warehouse_id' => $level->warehouse_id, 'quantity' => $allocated,
-                        'status' => 'reserved', 'reserved_at' => now(), 'created_at' => now(), 'updated_at' => now(),
+                        'client_id' => $clientId,
+                        'order_reference' => $orderId,
+                        'source' => 'ecommerce',
+                        'item_id' => $itemId,
+                        'warehouse_id' => $level->warehouse_id,
+                        'quantity' => $allocated,
+                        'status' => 'reserved',
+                        'reserved_at' => $now,
+                        'created_at' => $now,
+                        'updated_at' => $now,
                     ]);
-                    $inventory->table('stock_movements')->insert([
-                        'client_id' => $clientId, 'type' => 'reservation', 'item_id' => $itemId,
-                        'warehouse_id' => $level->warehouse_id, 'quantity' => -$allocated,
-                        'reference' => 'ECOM-'.$orderId, 'reference_id' => $orderId,
-                        'performed_by' => null, 'notes' => 'Reserved for ecommerce order', 'created_at' => now(),
+                } catch (\Throwable $e) {
+                    Log::warning('order_reservations insert failed', [
+                        'item_id' => $itemId,
+                        'error' => $e->getMessage(),
                     ]);
-                    $reserved[] = ['item_id' => $itemId, 'warehouse_id' => (int) $level->warehouse_id, 'quantity' => $allocated];
-                    $remaining -= $allocated;
                 }
+
+                // Record the stock movement (standalone INSERT, no transaction).
+                try {
+                    $inventory->table('stock_movements')->insert([
+                        'client_id' => $clientId,
+                        'type' => 'reservation',
+                        'item_id' => $itemId,
+                        'warehouse_id' => $level->warehouse_id,
+                        'quantity' => -$allocated,
+                        'reference' => 'ECOM-'.$orderId,
+                        'reference_id' => $orderId,
+                        'performed_by' => null,
+                        'notes' => 'Reserved for ecommerce order',
+                        'created_at' => $now,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::warning('stock_movements insert failed', [
+                        'item_id' => $itemId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                $reserved[] = [
+                    'item_id' => $itemId,
+                    'warehouse_id' => (int) $level->warehouse_id,
+                    'quantity' => $allocated,
+                ];
+                $remaining -= $allocated;
             }
 
-            return $reserved;
-        });
+            if ($remaining > 0) {
+                throw new RuntimeException(
+                    "Insufficient available inventory for '{$requirement['name']}'. "
+                    . "Needed {$requirement['quantity']}, but could only reserve "
+                    . ($requirement['quantity'] - $remaining) . '.'
+                );
+            }
+        }
+
+        return $reserved;
     }
 
-    private function createFulfillmentOrder(int $clientId, string $orderId, string $customer, string $product, int $quantity, float $amount, object $order, iterable $items): void
+    private function createFulfillmentOrder(int $clientId, string $customer, string $product, int $quantity, float $amount, object $order, iterable $items): void
     {
         $db = DB::connection('order_fulfillment');
-        if ($db->table('orders')->where('id', $orderId)->exists()) return;
         $address = is_array($order->shipping_address) ? implode(', ', array_filter($order->shipping_address)) : null;
-        $db->table('orders')->insert(['id' => $orderId, 'client_id' => $clientId, 'customer_name' => $customer ?: 'Customer', 'product_name' => $product ?: 'Storefront order', 'qty' => $quantity, 'product_amount' => $amount, 'status' => 'NEW', 'address' => $address, 'due_date' => now()->addDays(3)->toDateString(), 'created_at' => now(), 'updated_at' => now()]);
+
+        // The live orders table uses ORD-XXX style IDs (e.g. ORD-057).
+        // A trigger or default on the table may override whatever id we provide,
+        // so we generate the next available ORD-XXX id ourselves.
+        // Retry on duplicate key to handle concurrent inserts safely.
+        $fulfillmentOrderId = null;
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $candidate = $this->generateFulfillmentOrderId($db);
+            try {
+                $this->insertAvailable('order_fulfillment', 'orders', [
+                    'id' => $candidate,
+                    'client_id' => $clientId,
+                    'customer_name' => $customer ?: 'Customer',
+                    'product_name' => $product ?: 'Storefront order',
+                    'qty' => $quantity,
+                    'product_amount' => $amount,
+                    'status' => 'NEW',
+                    'address' => $address,
+                    'due_date' => now()->addDays(3)->toDateString(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $fulfillmentOrderId = $candidate;
+                break;
+            } catch (\Illuminate\Database\QueryException $e) {
+                // PostgreSQL unique_violation (23505) — another request claimed this ID; retry.
+                if ($e->getCode() === '23505' && $attempt < 4) {
+                    continue;
+                }
+                throw $e;
+            }
+        }
 
         if (! Schema::connection('order_fulfillment')->hasTable('order_items')) {
             return;
         }
 
-        $lines = collect($items)->map(function ($item) use ($clientId, $orderId): array {
+        $lines = collect($items)->map(function ($item) use ($clientId, $fulfillmentOrderId): array {
             $quantity = max(1, (int) data_get($item, 'quantity', 1));
             $unitPrice = (float) (data_get($item, 'price') ?? data_get($item, 'unit_price', 0));
 
             return [
                 'client_id'      => $clientId,
-                'order_id'       => $orderId,
+                'order_id'       => $fulfillmentOrderId,
                 'product_name'   => (string) data_get($item, 'name', 'Storefront item'),
                 'qty'            => $quantity,
                 'product_amount' => $unitPrice,
@@ -299,9 +404,27 @@ class ErpIntegrationService
             ];
         })->all();
 
-        if ($lines) {
-            $db->table('order_items')->insert($lines);
+        foreach ($lines as $line) {
+            $this->insertAvailable('order_fulfillment', 'order_items', $line);
         }
+    }
+
+    /**
+     * Generate the next ORD-XXX id for the order_fulfillment orders table.
+     * Falls back to ECOM-{timestamp} if the table is empty or has no ORD- rows.
+     */
+    private function generateFulfillmentOrderId(\Illuminate\Database\ConnectionInterface $db): string
+    {
+        $last = $db->table('orders')
+            ->where('id', 'LIKE', 'ORD-%')
+            ->orderByRaw("CAST(SUBSTRING(id FROM 5) AS INTEGER) DESC")
+            ->value('id');
+
+        if ($last && preg_match('/^ORD-(\d+)$/', $last, $m)) {
+            return 'ORD-' . str_pad((int) $m[1] + 1, 3, '0', STR_PAD_LEFT);
+        }
+
+        return 'ORD-' . str_pad(1, 3, '0', STR_PAD_LEFT);
     }
 
     private function createManufacturingWorkOrder(int $clientId, string $orderId, string $product, int $quantity): void
@@ -323,9 +446,41 @@ class ErpIntegrationService
     private function createFinanceInvoice(int $clientId, string $orderId, float $amount, float $shipping, string $paymentStatus): void
     {
         $db = DB::connection('finance');
-        if ($db->table('invoice')->where('nexora_client_id', $clientId)->where('order_id', $orderId)->exists()) return;
+        $columns = $this->columns['finance.invoice'] ??= Schema::connection('finance')->getColumnListing('invoice');
+
+        // Duplicate check — only query columns that actually exist.
+        $duplicateQuery = $db->table('invoice');
+        if (in_array('nexora_client_id', $columns, true)) {
+            $duplicateQuery->where('nexora_client_id', $clientId);
+        }
+        if (in_array('order_id', $columns, true)) {
+            $duplicateQuery->where('order_id', $orderId);
+        }
+        // Only run the duplicate check when at least one filter was added.
+        if (count($duplicateQuery->wheres) > 0 && $duplicateQuery->exists()) {
+            return;
+        }
+
         $paid = strtolower($paymentStatus) === 'paid';
-        $this->insertAvailable('finance', 'invoice', ['nexora_client_id' => $clientId, 'issue_date' => now()->toDateString(), 'due_date' => now()->addDays(14)->toDateString(), 'invoice_amount' => $amount - $shipping, 'discount' => 0, 'shipping_fee' => $shipping, 'paid_amount' => $paid ? $amount : 0, 'outstanding_amount' => $paid ? 0 : $amount, 'payment_method' => null, 'reference_number' => 'ECOM-'.$orderId, 'payment_details' => 'Automatically generated from ecommerce checkout', 'payment_status' => $paid ? 'Paid' : 'Unpaid', 'status' => $paid ? 'Paid' : 'Pending', 'payment_date' => $paid ? now()->toDateString() : null, 'order_id' => $orderId, 'created_at' => now(), 'updated_at' => now()]);
+        $this->insertAvailable('finance', 'invoice', [
+            'nexora_client_id' => $clientId,
+            'issue_date' => now()->toDateString(),
+            'due_date' => now()->addDays(14)->toDateString(),
+            'invoice_amount' => $amount - $shipping,
+            'discount' => 0,
+            'shipping_fee' => $shipping,
+            'paid_amount' => $paid ? $amount : 0,
+            'outstanding_amount' => $paid ? 0 : $amount,
+            'payment_method' => null,
+            'reference_number' => 'ECOM-'.$orderId,
+            'payment_details' => 'Automatically generated from ecommerce checkout',
+            'payment_status' => $paid ? 'Paid' : 'Unpaid',
+            'status' => $paid ? 'Paid' : 'Pending',
+            'payment_date' => $paid ? now()->toDateString() : null,
+            'order_id' => $orderId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     private function writeBiSnapshot(int $clientId): void

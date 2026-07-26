@@ -162,7 +162,7 @@ class EcommerceAdminController extends Controller
                 case 'gaming-laptops':
                     return app(CollectionsController::class)->index();
                 case 'prebuilt-pcs':
-                    return app(PrebuiltPcsController::class)->index($request);
+                    return app(ItemController::class)->index($request);
                 case 'cart':
                     return app(CartController::class)->index();
                 case 'checkout':
