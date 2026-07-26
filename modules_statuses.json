@@ -4,6 +4,7 @@
     "Procurement": true,
     "OrderFulfillment": true,
     "Store": true,
+    "CRM": true,
     "Manufacturing": true,
     "Finance": true,
     "BusinessIntelligence": true

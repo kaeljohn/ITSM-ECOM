@@ -11,6 +11,8 @@ use Modules\Ecommerce\Console\Commands\AssignEcommerceCatalogToClient;
 use Modules\Ecommerce\Console\Commands\BackfillEcommerceOrderLinks;
 use Modules\Ecommerce\Console\Commands\SeedStockLevelsForListing;
 use Modules\Ecommerce\Services\ListingAvailabilityService;
+use Modules\Ecommerce\Models\Order;
+use Modules\Ecommerce\Observers\OrderObserver;
 
 class EcommerceServiceProvider extends ServiceProvider
 {
@@ -35,5 +37,7 @@ class EcommerceServiceProvider extends ServiceProvider
         // moving its views into this module.
         Blade::anonymousComponentPath(__DIR__.'/../../resources/views/components');
 
+        // Register OrderObserver to sync CRM customer profiles on order creation
+        Order::observe(OrderObserver::class);
     }
 }

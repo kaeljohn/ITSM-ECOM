@@ -79,13 +79,7 @@ $storefrontRoutes = function () {
     Route::post('/checkout/process', [\Modules\Ecommerce\Http\Controllers\CheckoutController::class, 'process'])->name('checkout.process');
     Route::get('/checkout/success/{id}', [\Modules\Ecommerce\Http\Controllers\CheckoutController::class, 'success'])->name('checkout.success');
 
-    Route::get('/item-overview/{id}', function ($id) {
-        $product = \Modules\Ecommerce\Models\StorefrontListing::find($id)
-            ?? \Modules\Ecommerce\Models\Laptop::find($id)
-            ?? \Modules\Ecommerce\Models\PrebuiltConfig::find($id)
-            ?? \Modules\Ecommerce\Models\CustombuiltConfig::findOrFail($id);
-        return view('ecommerce::item-overview', compact('product'));
-    })->name('item-overview');
+
 
     Route::get('/collections', [\Modules\Ecommerce\Http\Controllers\CollectionsController::class, 'index'])->name('collections');
     Route::get('/categories/category1', function () {
@@ -109,8 +103,18 @@ $storefrontRoutes = function () {
 
     Route::get('/prebuilt-pcs', [\Modules\Ecommerce\Http\Controllers\ItemController::class, 'index'])->name('prebuilt-pcs');
 
+    // Support / Info Pages — using closures to avoid defaults() parameter resolution quirks
+    Route::get('/contact', function () { return app(\Modules\Ecommerce\Http\Controllers\PageController::class)->show('contact'); })->name('pages.contact');
+    Route::get('/shipping', function () { return app(\Modules\Ecommerce\Http\Controllers\PageController::class)->show('shipping'); })->name('pages.shipping');
+    Route::get('/returns', function () { return app(\Modules\Ecommerce\Http\Controllers\PageController::class)->show('returns'); })->name('pages.returns');
+    Route::get('/about', function () { return app(\Modules\Ecommerce\Http\Controllers\PageController::class)->show('about'); })->name('pages.about');
+    Route::get('/careers', function () { return app(\Modules\Ecommerce\Http\Controllers\PageController::class)->show('careers'); })->name('pages.careers');
+    Route::get('/affiliates', function () { return app(\Modules\Ecommerce\Http\Controllers\PageController::class)->show('affiliates'); })->name('pages.affiliates');
+
+    // Exclude static pages — they have explicit routes defined above.
+    // If you add a new page route above, add its slug here too.
     Route::get('/{slug}', [\Modules\Ecommerce\Http\Controllers\DynamicPageController::class, 'show'])
-        ->where('slug', '.*')
+        ->where('slug', '(?!contact$|shipping$|returns$|about$|careers$|affiliates$).*')
         ->name('dynamic.page');
 };
 

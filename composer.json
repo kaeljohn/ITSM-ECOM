@@ -32,6 +32,7 @@
             "Modules\\Procurement\\": "Modules/Procurement/app/",
             "Modules\\OrderFulfillment\\": "Modules/OrderFulfillment/app/",
             "Modules\\Ecommerce\\": "Modules/E-Commerce/Store/app/",
+            "Modules\\Ecommerce\\CRM\\": "Modules/E-Commerce/CRM/app/",
             "Modules\\Ecommerce\\Database\\Seeders\\": "Modules/E-Commerce/Store/database/seeders/",
             "Modules\\Ecommerce\\Database\\Factories\\": "Modules/E-Commerce/Store/database/factories/",
             "Modules\\Manufacturing\\": "Modules/Manufacturing/app/",
@@ -63,8 +64,7 @@
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi",
-            "@php artisan filament:upgrade"
+            "@php artisan package:discover --ansi"
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"

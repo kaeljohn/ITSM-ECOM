@@ -22,12 +22,6 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'test@example.com',
         // ]);
 
-        $this->call([
-            ConfiguratorSeeder::class,
-            PrebuiltConfigsSeeder::class,
-            CustombuiltConfigsSeeder::class,
-            LaptopsTableSeeder::class,
-            AccessoriesSeeder::class,
-        ]);
+        // No seeders needed
     }
 }

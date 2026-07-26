@@ -38,9 +38,7 @@
     $companyLinks = $footer['company_links'] ?? [
         ['label' => 'About Us', 'url' => '#'],
         ['label' => 'Careers', 'url' => '#'],
-        ['label' => 'Press Kit', 'url' => '#'],
         ['label' => 'Affiliates', 'url' => '#'],
-        ['label' => 'Contact', 'url' => '/contact'],
     ];
 
     $resolveUrl = function(?string $url) use ($store) {
@@ -90,11 +88,9 @@
                 <div>
                     <h4 id="footer-col2-title-el" class="text-primary font-black text-xs tracking-widest uppercase mb-6">{{ $col2Title }}</h4>
                     <ul class="space-y-4 text-[13px] text-gray-400 font-medium">
-                        <li><a href="#" class="hover:text-white transition-colors">3-Year Warranty</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Order Tracking</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Returns</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Live Chat</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">FAQ</a></li>
+                        <li><a href="/contact" class="hover:text-white transition-colors">Contact & FAQ</a></li>
+                        <li><a href="/shipping" class="hover:text-white transition-colors">Shipping & Delivery</a></li>
+                        <li><a href="/returns" class="hover:text-white transition-colors">Returns & Warranty</a></li>
                     </ul>
                 </div>
 

@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Search Results - TechForge</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Search Results - {{ $brandName }}</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -19,15 +20,41 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: { DEFAULT: '#ff6b00', hover: '#e56000', glow: 'rgba(255, 107, 0, 0.5)' },
+                        primary: { DEFAULT: '{{ $primaryHex }}', hover: '{{ $primaryHex }}CC', glow: '{{ $primaryHex }}80' },
+                        accent: '{{ $accentHex }}',
                         dark: { bg: '#050505', surface: '#121212' }
                     },
-                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    dropShadow: { glow: '0 0 15px {{ $primaryHex }}80' },
+                    boxShadow: {
+                        glow: '0 0 20px {{ $primaryHex }}4D',
+                        'glow-lg': '0 0 30px {{ $primaryHex }}26',
+                    }
                 }
             }
         };
     </script>
-    
+
+    <style id="dynamic-theme-vars">
+        :root {
+            --theme-primary: {{ $primaryHex }};
+            --theme-primary-rgb: {{ $primaryR }}, {{ $primaryG }}, {{ $primaryB }};
+            --theme-accent: {{ $accentHex }};
+            --theme-accent-rgb: {{ $accentR }}, {{ $accentG }}, {{ $accentB }};
+        }
+        .text-primary { color: var(--theme-primary) !important; }
+        .bg-primary { background-color: var(--theme-primary) !important; }
+        .border-primary { border-color: var(--theme-primary) !important; }
+        .text-accent { color: var(--theme-accent) !important; }
+        .bg-accent { background-color: var(--theme-accent) !important; }
+        .border-accent { border-color: var(--theme-accent) !important; }
+        .shadow-glow { box-shadow: 0 0 20px rgba(var(--theme-primary-rgb), 0.5) !important; }
+        .shadow-glow-lg { box-shadow: 0 0 30px rgba(var(--theme-primary-rgb), 0.35) !important; }
+        .shadow-glow-sm { box-shadow: 0 0 10px rgba(var(--theme-primary-rgb), 0.4) !important; }
+        .drop-shadow-glow { filter: drop-shadow(0 0 15px rgba(var(--theme-primary-rgb), 0.5)) !important; }
+        .ambient-light-1 { background: radial-gradient(circle, rgba(var(--theme-primary-rgb), 0.35) 0%, transparent 65%) !important; }
+        .ambient-light-2 { background: radial-gradient(circle, rgba(var(--theme-accent-rgb), 0.4) 0%, transparent 65%) !important; }
+    </style>
 
     <style>
         body {
@@ -38,43 +65,48 @@
         }
 
         .ambient-light-1 {
-            position: absolute;
-            top: -20vh;
-            left: -10vw;
-            width: 50vw;
-            height: 50vw;
-            background: radial-gradient(circle, rgba(255,107,0,0.15) 0%, rgba(0,0,0,0) 70%);
-            border-radius: 50%;
+            position: fixed;
+            top: -20%;
+            left: -20%;
+            width: 70vw;
+            height: 70vw;
+            background: radial-gradient(circle, {{ $primaryHex }}59 0%, transparent 65%);
+            z-index: -1;
             pointer-events: none;
-            z-index: 0;
+            animation: floatPulse1 20s ease-in-out infinite;
         }
 
         .ambient-light-2 {
-            position: absolute;
-            top: 40vh;
-            right: -20vw;
-            width: 60vw;
-            height: 60vw;
-            background: radial-gradient(circle, rgba(255,81,0,0.1) 0%, rgba(0,0,0,0) 70%);
-            border-radius: 50%;
+            position: fixed;
+            top: 35%;
+            right: -20%;
+            width: 80vw;
+            height: 80vw;
+            background: radial-gradient(circle, {{ $accentHex }}66 0%, transparent 65%);
+            z-index: -1;
             pointer-events: none;
-            z-index: 0;
+            animation: floatPulse2 25s ease-in-out infinite;
+        }
+
+        @keyframes floatPulse1 {
+            0% { opacity: 0.3; transform: translate(0, 0) scale(0.8); }
+            33% { opacity: 0.8; transform: translate(25vw, 15vh) scale(1.2); }
+            66% { opacity: 0.4; transform: translate(-10vw, 30vh) scale(0.9); }
+            100% { opacity: 0.3; transform: translate(0, 0) scale(0.8); }
+        }
+
+        @keyframes floatPulse2 {
+            0% { opacity: 0.8; transform: translate(0, 0) scale(1.1); }
+            33% { opacity: 0.3; transform: translate(-25vw, -15vh) scale(0.8); }
+            66% { opacity: 0.7; transform: translate(15vw, -25vh) scale(1.3); }
+            100% { opacity: 0.8; transform: translate(0, 0) scale(1.1); }
         }
 
         /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #050505;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #333;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #ff6b00;
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--theme-primary); }
     </style>
 
     @vite('Modules/E-Commerce/Store/resources/css/liquidglass.css')
@@ -85,97 +117,82 @@
     <div class="ambient-light-1"></div>
     <div class="ambient-light-2"></div>
 
-    <x-navbar />
+    <x-navbar :storefrontName="$brandName" :store="$store" :logoUrl="$logoUrl" :layout="$layout" />
 
-    <!-- Search Hero -->
-    <main class="relative pt-32 pb-8 lg:pt-40 lg:pb-12 overflow-hidden w-full">
-        <div class="max-w-[1500px] mx-auto px-6 lg:px-8 relative z-10 text-center">
-            <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-wide mb-2">
-                <span class="text-primary">{{ $totalResults }}</span> Results for "{{ $query }}"
-            </h1>
-        </div>
-    </main>
+    <!-- Results Header (below secondary nav) -->
+    <main class="relative pt-40 lg:pt-48 pb-6 overflow-hidden w-full">
+        <div class="max-w-[1500px] mx-auto px-6 lg:px-8 relative z-10">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-wide">
+                        <span class="text-primary">{{ $totalResults }}</span> Results for "{{ $query }}"
+                    </h1>
+                    <p class="text-gray-400 text-sm mt-1">Searching across <span class="text-white font-bold">{{ $brandName }}</span></p>
+                </div>
 
-    <!-- Wrapper for AJAX Tab/Pagination Loading -->
-    <div id="search-results-container" class="transition-opacity duration-300">
-
-    <!-- Category Tabs -->
-    <div class="max-w-[1500px] mx-auto px-6 lg:px-8 relative z-10 mb-8 overflow-x-auto">
-        <div class="flex items-center justify-center gap-4 border-b border-white/10 pb-4 min-w-max">
-            <a href="{{ route('ecommerce.search', ['q' => $query, 'tab' => 'prebuilt']) }}" class="tab-link flex items-center gap-2 px-4 py-2 rounded-xl transition-all {{ $tab === 'prebuilt' ? 'bg-primary text-white font-bold' : 'text-gray-400 hover:text-white hover:bg-white/5' }}">
-                Prebuilt PCs
-                <span class="text-xs py-0.5 px-2 rounded-md {{ $tab === 'prebuilt' ? 'bg-black/30 text-white' : 'bg-white/10 text-gray-400' }}">{{ $prebuiltCount }}</span>
-            </a>
-            <a href="{{ route('ecommerce.search', ['q' => $query, 'tab' => 'custom']) }}" class="tab-link flex items-center gap-2 px-4 py-2 rounded-xl transition-all {{ $tab === 'custom' ? 'bg-primary text-white font-bold' : 'text-gray-400 hover:text-white hover:bg-white/5' }}">
-                Custom PCs
-                <span class="text-xs py-0.5 px-2 rounded-md {{ $tab === 'custom' ? 'bg-black/30 text-white' : 'bg-white/10 text-gray-400' }}">{{ $customCount }}</span>
-            </a>
-            <a href="{{ route('ecommerce.search', ['q' => $query, 'tab' => 'laptops']) }}" class="tab-link flex items-center gap-2 px-4 py-2 rounded-xl transition-all {{ $tab === 'laptops' ? 'bg-primary text-white font-bold' : 'text-gray-400 hover:text-white hover:bg-white/5' }}">
-                Gaming Laptops
-                <span class="text-xs py-0.5 px-2 rounded-md {{ $tab === 'laptops' ? 'bg-black/30 text-white' : 'bg-white/10 text-gray-400' }}">{{ $laptopCount }}</span>
-            </a>
-            <a href="{{ route('ecommerce.search', ['q' => $query, 'tab' => 'parts']) }}" class="tab-link flex items-center gap-2 px-4 py-2 rounded-xl transition-all {{ $tab === 'parts' ? 'bg-primary text-white font-bold' : 'text-gray-400 hover:text-white hover:bg-white/5' }}">
-                Parts & Accessories
-                <span class="text-xs py-0.5 px-2 rounded-md {{ $tab === 'parts' ? 'bg-black/30 text-white' : 'bg-white/10 text-gray-400' }}">{{ $partsCount }}</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- Category Content -->
-    <form id="filter-form" method="GET" action="{{ route('ecommerce.search') }}" class="max-w-[1500px] mx-auto px-6 lg:px-8 pb-24 relative z-10 flex flex-col lg:flex-row gap-8">
-        
-        <!-- Preserve Query and Tab in Form -->
-        <input type="hidden" name="q" value="{{ $query }}">
-        <input type="hidden" name="tab" value="{{ $tab }}">
-
-        <!-- Product Filter Component -->
-        <div id="filter-sidebar-wrapper" style="{{ ($tab === 'parts' || $tab === 'laptops') ? 'display: none;' : '' }}">
-            <x-search-filter :counts="$counts" route="search" :globalMinPrice="$globalMinPrice" :globalMaxPrice="$globalMaxPrice" />
-        </div>
-
-        <!-- Product Grid -->
-        <div id="product-grid-area" class="flex-1 w-full lg:w-auto transition-opacity duration-300">
-            
-            <!-- Controls / Sort -->
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-                <p class="text-sm text-gray-400">Showing <span id="product-count" class="text-white font-bold">{{ $configs->count() }}</span> products</p>
-                
-                <div class="flex items-center gap-3 w-full sm:w-auto">
+                <!-- Sort By -->
+                <form method="GET" action="{{ route('ecommerce.search', ['store' => $store]) }}" class="flex items-center gap-3 shrink-0">
+                    <input type="hidden" name="q" value="{{ $query }}">
                     <span class="text-xs text-gray-500 uppercase tracking-widest font-bold">Sort By</span>
-                    <div class="relative w-full sm:w-48">
-                        <select name="sort" onchange="document.getElementById('filter-form').requestSubmit()" class="w-full bg-black/40 border border-[#3a1810] rounded-xl py-2 pl-4 pr-10 text-sm text-white appearance-none cursor-pointer hover:border-[#5a2810] transition-colors focus:outline-none focus:border-primary">
-                            <option {{ request('sort') == 'Recommended' ? 'selected' : '' }}>Recommended</option>
-                            <option {{ request('sort') == 'Price: Low to High' ? 'selected' : '' }}>Price: Low to High</option>
-                            <option {{ request('sort') == 'Price: High to Low' ? 'selected' : '' }}>Price: High to Low</option>
+                    <div class="relative w-48">
+                        <select name="sort" onchange="this.form.submit()" class="w-full bg-black/40 border border-white/10 rounded-xl py-2 pl-4 pr-10 text-sm text-white appearance-none cursor-pointer hover:border-white/30 transition-colors focus:outline-none focus:border-primary">
+                            <option value="Recommended" {{ request('sort') == 'Recommended' ? 'selected' : '' }}>Newest</option>
+                            <option value="Price: Low to High" {{ request('sort') == 'Price: Low to High' ? 'selected' : '' }}>Price: Low to High</option>
+                            <option value="Price: High to Low" {{ request('sort') == 'Price: High to Low' ? 'selected' : '' }}>Price: High to Low</option>
                         </select>
                         <i class="ph ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                     </div>
-                </div>
+                </form>
             </div>
-
-            <!-- Grid -->
-            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                <!-- JS Populates here -->
-            </div>
-            
-            <!-- Pagination -->
-            <div id="pagination-container" class="mt-12 w-full flex justify-center gap-2">
-                <!-- JS Populates here -->
-            </div>
-
         </div>
+    </main>
 
-    </form>
+    <!-- Product Grid -->
+    <div class="max-w-[1500px] mx-auto px-6 lg:px-8 pb-24 relative z-10">
+        @if($listings->isEmpty())
+            <div class="py-20 flex flex-col items-center justify-center text-center bg-white/5 rounded-2xl border border-white/10">
+                <i class="ph ph-magnifying-glass text-6xl text-gray-600 mb-6"></i>
+                <h3 class="text-2xl font-bold text-white mb-2">No items found</h3>
+                <p class="text-gray-400">Try adjusting your search or filters.</p>
+            </div>
+        @else
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                @foreach($listings as $listing)
+                <div class="bg-gradient-to-b from-white/5 to-transparent border border-white/10 rounded-2xl p-4 relative overflow-hidden group hover:border-primary/50 transition-all duration-500 hover:shadow-glow-lg flex flex-col h-full">
+                    <div class="relative rounded-xl overflow-hidden aspect-[4/3] mb-5 bg-black/40">
+                        @if($listing->image_url)
+                            <img src="{{ asset('storage/' . $listing->image_url) }}" alt="{{ $listing->name }}" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100">
+                        @else
+                            <div class="w-full h-full flex items-center justify-center">
+                                <i class="ph ph-package text-5xl text-gray-600"></i>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="flex flex-col flex-1">
+                        <h3 class="text-lg font-bold text-white group-hover:text-primary transition-colors line-clamp-2 mb-3">{{ $listing->name }}</h3>
+                        @if($listing->description)
+                            <p class="text-gray-400 text-sm leading-relaxed line-clamp-2 mb-4">{{ $listing->description }}</p>
+                        @endif
+                        <div class="mt-auto pt-4 border-t border-white/10">
+                            <div class="flex items-end justify-between">
+                                <div>
+                                    <span class="text-xl font-black text-white">P{{ number_format($listing->price, 2) }}</span>
+                                </div>                        <a href="{{ route('ecommerce.listings.show', ['store' => $store, 'listing' => $listing->id]) }}" class="py-2 px-4 rounded-full border border-primary text-primary hover:bg-primary hover:text-white font-bold transition-all duration-300 text-center flex items-center gap-2 text-sm">
+                                    <i class="ph-bold ph-arrow-right"></i> Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        @endif
     </div>
 
-    <x-footer />
+    <x-footer :storefrontName="$brandName" :store="$store" :logoUrl="$logoUrl" :layout="$layout" />
     
     <script>
-        window.initialConfigs = @json($configs);
         window.appUrl = "{{ url('/') }}";
     </script>
-    
-    <!-- Load our compiled JavaScript (You can remove LiquidGlass initialization from inside this file) -->
-    @vite(['Modules/E-Commerce/Store/resources/js/HomePage/Homepage.js', 'Modules/E-Commerce/Store/resources/js/Category/Category.js', 'Modules/E-Commerce/Store/resources/js/Pages/Search/Search.js'])
 </body>
 </html>

@@ -22,7 +22,11 @@
     $announcement_text = $navbar['announcement_text'] ?? 'Ã°Å¸â€Â¥ Free shipping on all orders over Ã¢â€šÂ±50,000!';
     $announcement_url = $navbar['announcement_url'] ?? '';
     $search_placeholder = $navbar['search_placeholder'] ?? 'What are we searching?';
-    $trending_searches = array_map('trim', explode(',', $navbar['trending_searches'] ?? 'RTX 4090, Ryzen 7 7800X3D, Prebuilt Gaming PC, 32GB DDR5 RAM'));
+    // Fetch active store listings for the search dropdown
+    $suggestedListings = \Modules\Ecommerce\Models\StorefrontListing::where('status', 'active')
+        ->orderBy('created_at', 'desc')
+        ->limit(5)
+        ->get();
     $mega_pc_title = $navbar['mega_pc_title'] ?? 'PC FORGE';
     $mega_pc_subtitle = $navbar['mega_pc_subtitle'] ?? 'Use our exclusive PC Forge tool to build your ultimate rig entirely from scratch, part by part.';
     $mega_pc_button = $navbar['mega_pc_button'] ?? 'Launch PC Forge';
@@ -60,9 +64,7 @@
 
         <!-- Logo & Name -->
         <a href="{{ url('/') }}" class="flex items-center gap-3 shrink-0 relative z-30">
-            <div class="bg-gradient-to-br from-primary to-accent w-10 h-10 rounded-xl flex items-center justify-center shadow-glow-sm">
-                <img src="{{ $logoUrl }}" alt="{{ $storefrontName }} logo" class="h-6 w-auto object-contain">
-            </div>
+            <img src="{{ $logoUrl }}" alt="{{ $storefrontName }} logo" class="h-9 w-auto block">
             <span class="hidden md:block text-xl font-bold tracking-wide text-white">{{ $storefrontName }}</span>
         </a>
 
@@ -86,12 +88,24 @@
             <!-- Search Dropdown -->
             <div id="search-dropdown" class="bg-[#1a1a1a]/90 backdrop-blur-2xl border border-white/10 absolute top-[calc(100%+0.5rem)] left-0 w-full rounded-2xl overflow-hidden shadow-2xl py-4 opacity-0 pointer-events-none transition-all duration-300 transform -translate-y-2 origin-top">
                 <div class="px-5 mb-2">
-                    <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Popular Searches</span>
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Suggested Products</span>
                 </div>
-                                <ul class="text-sm text-gray-300 flex flex-col">
-                    @foreach (array_filter($trending_searches) as $term)
-                    <li><a href="{{ route('ecommerce.search', ['store' => $store, 'q' => $term]) }}" class="flex items-center gap-3 px-5 py-2.5 hover:bg-white/5 hover:text-primary transition-colors"><i class="ph ph-magnifying-glass text-gray-500"></i> {{ $term }}</a></li>
-                    @endforeach
+                <ul class="text-sm text-gray-300 flex flex-col">
+                    @forelse($suggestedListings as $listing)
+                    <li>
+                        <a href="{{ route('ecommerce.listings.show', ['store' => $store, 'listing' => $listing->id]) }}" class="flex items-center gap-3 px-5 py-2.5 hover:bg-white/5 hover:text-primary transition-colors">
+                            @if($listing->image_url)
+                                <img src="{{ asset('storage/' . $listing->image_url) }}" alt="" class="w-7 h-7 rounded object-cover">
+                            @else
+                                <i class="ph ph-package text-gray-500"></i>
+                            @endif
+                            <span class="flex-1 truncate">{{ $listing->name }}</span>
+                            <span class="text-xs text-gray-500 font-bold">P{{ number_format($listing->price, 0) }}</span>
+                        </a>
+                    </li>
+                    @empty
+                    <li class="px-5 py-3 text-gray-500 text-sm">No listings available yet.</li>
+                    @endforelse
                 </ul>
             </div>
         </form>

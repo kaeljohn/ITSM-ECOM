@@ -122,7 +122,7 @@
 
     <x-navbar />
 
-    <main class="flex-grow container mx-auto px-4 pt-32 pb-16 lg:pt-40 lg:pb-20 relative z-10 max-w-7xl">
+    <main class="flex-grow container mx-auto px-4 pt-48 pb-16 lg:pt-56 lg:pb-20 relative z-10 max-w-7xl">
         
         @php
             $isOnSale = rand(0, 1) == 1; // 50% chance to be on sale
@@ -142,30 +142,11 @@
             ];
             
             $shortSpecs = [
-                ['label' => 'OS', 'value' => 'Windows 11 Home'],
-                ['label' => 'Case', 'value' => $product->pcCase->name ?? 'Standard TechForge Case'],
-                ['label' => 'Processor', 'value' => $product->cpu->name ?? 'N/A'],
-                ['label' => 'Video Card', 'value' => $product->gpu->name ?? 'N/A'],
-                ['label' => 'Memory', 'value' => $product->ram->name ?? 'N/A'],
-                ['label' => 'Motherboard', 'value' => $product->motherboard->name ?? 'N/A'],
-                ['label' => 'Storage', 'value' => $product->storage->name ?? 'N/A'],
-                ['label' => 'Warranty', 'value' => '3 Year Standard Warranty'],
-            ];
-            
-            $detailedSpecs = [
-                ['label' => 'Operating System', 'value' => 'Windows 11 Home 64-bit'],
-                ['label' => 'Case', 'value' => $product->pcCase->name ?? 'Standard TechForge Case'],
-                ['label' => 'Processor', 'value' => $product->cpu->name ?? 'N/A'],
-                ['label' => 'Video Card', 'value' => $product->gpu->name ?? 'N/A'],
-                ['label' => 'Memory', 'value' => $product->ram->name ?? 'N/A'],
-                ['label' => 'Motherboard', 'value' => $product->motherboard->name ?? 'N/A'],
-                ['label' => 'Storage', 'value' => $product->storage->name ?? 'N/A'],
-                ['label' => 'Processor Cooling', 'value' => 'TechForge Liquid Cooler 240mm'],
-                ['label' => 'Power Supply', 'value' => $product->powerSupply->name ?? 'N/A'],
-                ['label' => 'WiFi', 'value' => 'Wi-Fi 6 (802.11ax) + Bluetooth 5.2'],
-                ['label' => 'Keyboard', 'value' => 'TechForge Mechanical Gaming Keyboard (RGB)'],
-                ['label' => 'Mouse', 'value' => 'TechForge Precision Gaming Mouse'],
-                ['label' => 'Warranty', 'value' => '3 Year Standard Warranty (Labor + Parts)'],
+                ['label' => 'SKU', 'value' => $product->sku ?? 'N/A'],
+                ['label' => 'Category', 'value' => $product->category ?? 'General'],
+                ['label' => 'Availability', 'value' => ($product->available_quantity ?? 0) > 0 ? 'In Stock' : 'Out of Stock'],
+                ['label' => 'Stock', 'value' => ($product->available_quantity ?? 0) . ' units available'],
+                ['label' => 'Warranty', 'value' => '1 Year Standard Warranty'],
             ];
         @endphp
 
@@ -224,6 +205,16 @@
                     </div>
                 </div>
 
+                <!-- Description -->
+                <div class="mb-8">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <i class="ph-bold ph-file-text text-primary"></i> Description
+                    </h3>
+                    <p class="text-gray-300 leading-relaxed text-base">
+                        {{ $product->description ?? 'No description available for this product.' }}
+                    </p>
+                </div>
+
                 <hr class="border-white/10 mb-6">
 
                 <!-- Short Specs -->
@@ -238,35 +229,6 @@
 
                 <hr class="border-white/10 mb-6">
 
-                <!-- Performance Widget -->
-                <div class="mb-8">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <i class="ph-bold ph-game-controller text-primary"></i> Est. 1440p Performance
-                    </h3>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div class="bg-[#050505]/50 border border-white/5 rounded-xl p-3 text-center backdrop-blur-sm group hover:border-primary/30 transition-colors cursor-default">
-                            <div class="text-primary font-black text-xl mb-1">
-                                {{ str_contains(strtoupper($product->gpu->name ?? ''), '4090') ? '160+' : (str_contains(strtoupper($product->gpu->name ?? ''), '4080') ? '140+' : '110+') }}
-                            </div>
-                            <div class="text-[9px] text-gray-400 font-bold uppercase">Cyberpunk</div>
-                        </div>
-                        <div class="bg-[#050505]/50 border border-white/5 rounded-xl p-3 text-center backdrop-blur-sm group hover:border-primary/30 transition-colors cursor-default">
-                            <div class="text-primary font-black text-xl mb-1">
-                                {{ str_contains(strtoupper($product->gpu->name ?? ''), '4090') ? '350+' : (str_contains(strtoupper($product->gpu->name ?? ''), '4080') ? '300+' : '220+') }}
-                            </div>
-                            <div class="text-[9px] text-gray-400 font-bold uppercase">Valorant</div>
-                        </div>
-                        <div class="bg-[#050505]/50 border border-white/5 rounded-xl p-3 text-center backdrop-blur-sm group hover:border-primary/30 transition-colors cursor-default">
-                            <div class="text-primary font-black text-xl mb-1">
-                                {{ str_contains(strtoupper($product->gpu->name ?? ''), '4090') ? '180+' : (str_contains(strtoupper($product->gpu->name ?? ''), '4080') ? '150+' : '120+') }}
-                            </div>
-                            <div class="text-[9px] text-gray-400 font-bold uppercase">Warzone</div>
-                        </div>
-                    </div>
-                </div>
-
-                <hr class="border-white/10 mb-6">
-
                 <!-- Actions -->
                 <div class="flex flex-col gap-4 mb-8">
                     <div class="flex items-center gap-4">
@@ -277,7 +239,7 @@
                             <button onclick="incrementQty()" class="w-10 h-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-r-xl transition-colors"><i class="ph-bold ph-plus"></i></button>
                         </div>
                         
-                        <button type="button" id="main-add-to-cart" onclick="window.addToCart('listing-{{ $product->id }}', '{{ addslashes($product->name) }}', {{ $product->price }}, '{{ $product->image_url }}', parseInt(document.getElementById('qty').value) || 1, '{{ $product->bom_id ? 'bom_listing' : 'generic' }}', {!! $product->bom_id ? "{ bom_id: " . (int)$product->bom_id . ", listing_id: '" . $product->id . "' }" : 'null' !!}, event.currentTarget)" class="flex-1 h-14 bg-primary hover:bg-white hover:text-black text-white rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_0_20px_rgba(255,107,0,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] group">
+                        <button type="button" id="main-add-to-cart" onclick="window.addToCart({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->price }}, '{{ $product->image_url }}', parseInt(document.getElementById('qty').value) || 1, '{{ $product->bom_id ? 'bom_listing' : 'generic' }}', {!! $product->bom_id ? "{ bom_id: " . (int)$product->bom_id . ", listing_id: '" . $product->id . "' }" : 'null' !!}, event.currentTarget)" class="flex-1 h-14 bg-primary hover:bg-white hover:text-black text-white rounded-xl font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_0_20px_rgba(255,107,0,0.3)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)] group">
                             <i class="ph-bold ph-shopping-cart text-xl group-hover:scale-110 transition-transform"></i> Add To Cart
                         </button>
                     </div>
@@ -302,53 +264,36 @@
             </div>
         </div>
 
-        <hr class="border-white/10 mb-12">
-
-        <!-- What's in the Box -->
-        <div class="max-w-4xl mx-auto mb-16">
-            <h2 class="text-xl font-black text-white mb-6 uppercase tracking-widest flex items-center gap-3">
-                <i class="ph-bold ph-package text-primary"></i> What's in the Box
-            </h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-[#050505]/50 border border-white/5 rounded-2xl p-6 text-center backdrop-blur-md transition-all hover:bg-white/5 hover:border-primary/30 group">
-                    <i class="ph-bold ph-desktop text-3xl text-primary mb-3 block drop-shadow-[0_0_10px_rgba(255,107,0,0.5)] group-hover:scale-110 transition-transform"></i>
-                    <span class="text-xs font-bold text-white uppercase tracking-wider">Prebuilt PC</span>
-                </div>
-                <div class="bg-[#050505]/50 border border-white/5 rounded-2xl p-6 text-center backdrop-blur-md transition-all hover:bg-white/5 hover:border-primary/30 group">
-                    <i class="ph-bold ph-plug text-3xl text-primary mb-3 block drop-shadow-[0_0_10px_rgba(255,107,0,0.5)] group-hover:scale-110 transition-transform"></i>
-                    <span class="text-xs font-bold text-white uppercase tracking-wider">Power Cable</span>
-                </div>
-                <div class="bg-[#050505]/50 border border-white/5 rounded-2xl p-6 text-center backdrop-blur-md transition-all hover:bg-white/5 hover:border-primary/30 group">
-                    <i class="ph-bold ph-keyboard text-3xl text-primary mb-3 block drop-shadow-[0_0_10px_rgba(255,107,0,0.5)] group-hover:scale-110 transition-transform"></i>
-                    <span class="text-xs font-bold text-white uppercase tracking-wider">RGB Keyboard</span>
-                </div>
-                <div class="bg-[#050505]/50 border border-white/5 rounded-2xl p-6 text-center backdrop-blur-md transition-all hover:bg-white/5 hover:border-primary/30 group">
-                    <i class="ph-bold ph-mouse text-3xl text-primary mb-3 block drop-shadow-[0_0_10px_rgba(255,107,0,0.5)] group-hover:scale-110 transition-transform"></i>
-                    <span class="text-xs font-bold text-white uppercase tracking-wider">Gaming Mouse</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Detailed Specifications -->
-        <div class="max-w-4xl mx-auto">
+        <!-- Suggested Items -->
+        @php
+            $suggestedItems = \Modules\Ecommerce\Models\StorefrontListing::where('status', 'active')
+                ->where('id', '!=', $product->id)
+                ->inRandomOrder()
+                ->limit(4)
+                ->get();
+        @endphp
+        <div class="max-w-7xl mx-auto mt-20">
             <h2 class="text-2xl font-black text-white mb-8 uppercase tracking-widest flex items-center gap-3">
-                <i class="ph-bold ph-list-dashes text-primary"></i> Detailed Specifications
+                <i class="ph-bold ph-arrows-counter-clockwise text-primary"></i> You Might Also Like
             </h2>
-            
-            <div class="liquid-glass rounded-3xl border border-white/10 overflow-hidden">
-                <div class="flex flex-col">
-                    @foreach($detailedSpecs as $index => $spec)
-                    <div class="flex flex-col sm:flex-row border-b border-white/5 last:border-b-0 {{ $index % 2 == 0 ? 'bg-black/20' : 'bg-transparent' }}">
-                        <div class="sm:w-1/3 p-4 sm:p-6 text-sm font-bold text-gray-400 uppercase tracking-wider border-r border-white/5">
-                            {{ $spec['label'] }}
+            @if($suggestedItems->isNotEmpty())
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    @foreach($suggestedItems as $suggested)
+                    <a href="{{ route('ecommerce.listings.show', ['store' => $store, 'listing' => $suggested->id]) }}" class="group liquid-glass rounded-2xl p-4 border border-white/5 hover:border-primary/50 hover:shadow-glow-lg transition-all duration-500 flex flex-col">
+                        <div class="aspect-square w-full rounded-xl bg-black/40 mb-3 flex items-center justify-center p-3 border border-white/5 overflow-hidden">
+                            <img src="{{ $suggested->image_url ? asset('storage/' . $suggested->image_url) : 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?auto=format&fit=crop&w=800&q=80' }}" alt="{{ $suggested->name }}" class="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500">
                         </div>
-                        <div class="sm:w-2/3 p-4 sm:p-6 text-base text-gray-200">
-                            {{ $spec['value'] }}
-                        </div>
-                    </div>
+                        <h3 class="text-sm font-bold text-white truncate mb-1 group-hover:text-primary transition-colors">{{ $suggested->name }}</h3>
+                        <div class="text-primary font-black text-sm mt-auto">₱{{ number_format($suggested->price) }}</div>
+                    </a>
                     @endforeach
                 </div>
-            </div>
+            @else
+                <div class="bg-[#050505]/50 border border-white/5 rounded-2xl p-12 text-center backdrop-blur-md">
+                    <i class="ph-bold ph-package text-4xl text-gray-600 mb-4 block"></i>
+                    <p class="text-gray-500 text-lg font-medium">No suggested items available at the moment.</p>
+                </div>
+            @endif
         </div>
 
 
@@ -366,7 +311,7 @@
                             </div>
                         </div>
                     </div>
-                    <button type="button" onclick="window.addToCart('listing-{{ $product->id }}', '{{ addslashes($product->name) }}', {{ $product->price }}, '{{ $product->image_url }}', 1, '{{ $product->bom_id ? 'bom_listing' : 'generic' }}', {!! $product->bom_id ? "{ bom_id: " . (int)$product->bom_id . ", listing_id: '" . $product->id . "' }" : 'null' !!}, event.currentTarget)" class="bg-primary hover:bg-white hover:text-black text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest transition-all duration-300 shadow-[0_0_15px_rgba(255,107,0,0.4)]">
+                    <button type="button" onclick="window.addToCart({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->price }}, '{{ $product->image_url }}', 1, '{{ $product->bom_id ? 'bom_listing' : 'generic' }}', {!! $product->bom_id ? "{ bom_id: " . (int)$product->bom_id . ", listing_id: '" . $product->id . "' }" : 'null' !!}, event.currentTarget)" class="bg-primary hover:bg-white hover:text-black text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest transition-all duration-300 shadow-[0_0_15px_rgba(255,107,0,0.3)]">
                         Add To Cart
                     </button>
                 </div>

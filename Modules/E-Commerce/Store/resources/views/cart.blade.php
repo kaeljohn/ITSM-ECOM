@@ -390,36 +390,7 @@
 
                 </div>
 
-            </div>
-
-            <!-- You May Also Like Section -->
-            @if(count($recommendations) > 0)
-            <section class="mt-20">
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 class="text-2xl font-black text-white">You May Also Like</h2>
-                        <p class="text-sm text-gray-500 mt-1">Complete your setup with these popular picks.</p>
-                    </div>
-                </div>
-                <div class="flex gap-5 overflow-x-auto pb-6 -mx-6 px-6 scroll-px-6 snap-x snap-mandatory hide-scroll-bar scroll-smooth" style="mask-image: linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 32px, black calc(100% - 32px), transparent);">
-                    @foreach($recommendations as $rec)
-                    <div class="w-[260px] shrink-0 snap-start liquid-glass rounded-2xl p-4 border border-white/10 hover:border-primary/40 transition-all group">
-                        <div class="aspect-square w-full rounded-xl bg-black/40 mb-4 flex items-center justify-center p-4 border border-white/5 overflow-hidden">
-                            <img src="{{ $rec->image_url }}" alt="{{ $rec->name }}" class="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500">
-                        </div>
-                        <h4 class="text-sm font-bold text-white truncate mb-1" title="{{ $rec->name }}">{{ $rec->name }}</h4>
-                        <div class="flex items-center justify-between mt-2">
-                            <span class="text-lg font-black text-white">₱{{ number_format($rec->price) }}</span>
-                            <button onclick="window.addToCart('{{ $rec->id }}', '{{ addslashes($rec->name) }}', {{ $rec->price }}, '{{ $rec->image_url }}')" class="w-9 h-9 rounded-lg bg-white/5 border border-white/10 text-white flex items-center justify-center hover:bg-primary hover:border-primary hover:scale-110 transition-all">
-                                <i class="ph-bold ph-plus text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-            </section>
-            @endif
-        </div>
+            </div>        </div>
     </main>
 
     <x-footer />

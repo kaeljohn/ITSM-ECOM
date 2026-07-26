@@ -22,7 +22,7 @@ class ItemController extends Controller
 
         $configs = $allConfigs->map(function($config) {
             $config->setAttribute('html_card', view('ecommerce::components.store-item-card', [
-                'id' => 'listing-' . $config->id,
+                'id' => $config->id,
                 'name' => $config->name,
                 'price' => $config->price,
                 'image' => $config->image_url ?? $config->image,

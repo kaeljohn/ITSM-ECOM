@@ -3,10 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ?? 'Nexora E-commerce' }}</title>
+    <title>@yield('title', 'Nexora E-commerce')</title>
     <link rel="icon" type="image/x-icon" href="{{ asset('images/nexora-icon.ico') }}">
     <!-- Load Phosphor Icons for the sidebar -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    @yield('head')
     <style>
         :root {
             --c-sidebar-bg: #0B1E3D;
@@ -27,34 +28,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: var(--c-bg); color: var(--c-text); display: flex; flex-direction: column; min-height: 100vh; }
 
-        /* Top Header */
-        .shopify-header {
-            height: 56px;
-            background: var(--c-header-bg);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            position: sticky;
-            top: 0;
-            z-index: 50;
-        }
-        .header-logo { display: flex; align-items: center; text-decoration: none; }
-        .header-logo img { height: 32px; object-fit: contain; }
-
-
-        .header-actions { display: flex; align-items: center; gap: 16px; color: #fff; }
-        .header-actions i { font-size: 20px; cursor: pointer; opacity: 0.8; transition: opacity 0.2s; }
-        .header-actions i:hover { opacity: 1; }
-
-        .user-menu { position: relative; }
-        .user-button { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: var(--c-primary); color: #fff; font-weight: 600; font-size: 13px; cursor: pointer; }
-        .user-dropdown { visibility: hidden; position: absolute; z-index: 20; top: 40px; right: 0; width: 220px; overflow: hidden; border-radius: 8px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.15); opacity: 0; transform: translateY(-8px); transition: .16s ease; border: 1px solid var(--c-border); }
-        .user-menu[data-open="true"] .user-dropdown { visibility: visible; opacity: 1; transform: translateY(0); }
-        .user-dropdown a, .user-dropdown button { display: block; width: 100%; padding: 12px 16px; border: 0; background: #fff; color: var(--c-text); font: 500 14px Inter, Arial, sans-serif; text-align: left; text-decoration: none; cursor: pointer; }
-        .user-dropdown a:hover, .user-dropdown button:hover { background: #f5f5f5; }
-        .user-dropdown form { margin: 0; }
-        .user-dropdown form button { color: #dc2626; border-top: 1px solid var(--c-border); }
+        /* Top header styles moved to components/admin-navbar.blade.php */
 
         /* Layout Structure */
         .layout-wrapper { display: flex; flex: 1; overflow: hidden; }
@@ -131,36 +105,7 @@
 </head>
 <body>
     @if(!($hideLayout ?? false))
-    <header class="shopify-header">
-        <a class="header-logo" href="{{ route('ecommerce.admin.dashboard') }}">
-            <img src="{{ asset('images/Banner Transparent.png') }}" style="filter: brightness(0) invert(1);" alt="Nexora Logo">
-        </a>
-
-
-
-        <div class="header-actions">
-            <i class="ph ph-bell"></i>
-            <div class="user-menu" data-user-menu>
-                @php
-                    $companyName = auth('ecommerce_admin')->user()?->getCompany()?->company_name ?? 'Store';
-                    $initials = strtoupper(substr($companyName, 0, 2));
-                @endphp
-                <button type="button" class="user-button" data-user-menu-button aria-label="Open user menu" aria-expanded="false">
-                    {{ $initials }}
-                </button>
-                <div class="user-dropdown" data-user-menu-dropdown>
-                    <div style="padding: 12px 16px; border-bottom: 1px solid var(--c-border); background: #fafafa;">
-                        <strong>{{ $companyName }}</strong>
-                    </div>
-                    @php($slug = auth('ecommerce_admin')->user()?->getCompany()?->ecommerce_slug)
-                    @if($slug)
-                        <a href="{{ route('ecommerce.home', ['store' => $slug]) }}" target="_blank" rel="noopener">Open Storefront</a>
-                    @endif
-                    <form method="post" action="{{ route('ecommerce.admin.logout') }}">@csrf<button type="submit" style="color: #d32f2f; background: none; text-align: left; padding: 0;">Log Out</button></form>
-                </div>
-            </div>
-        </div>
-    </header>
+        @include('ecommerce::components.admin-navbar')
     @endif
 
     <div class="layout-wrapper">
@@ -180,6 +125,26 @@
                 <div class="sidebar-section-title">Sales Channels</div>
                 <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.layout.*') ? 'active' : '' }}" href="{{ route('ecommerce.admin.layout.edit') }}">
                     <i class="ph ph-storefront"></i> {{ auth('ecommerce_admin')->user()?->getCompany()?->company_name ?? 'Online Store' }}
+                </a>
+
+                <div class="sidebar-section-title">CRM</div>
+                <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.crm.dashboard') ? 'active' : '' }}" href="{{ route('ecommerce.admin.crm.dashboard') }}">
+                    <i class="ph ph-gauge"></i> Dashboard
+                </a>
+                <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.crm.customers*') ? 'active' : '' }}" href="{{ route('ecommerce.admin.crm.customers') }}">
+                    <i class="ph ph-users"></i> Customers
+                </a>
+                <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.crm.abandoned-carts') ? 'active' : '' }}" href="{{ route('ecommerce.admin.crm.abandoned-carts') }}">
+                    <i class="ph ph-shopping-cart"></i> Abandoned Carts
+                </a>
+                <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.crm.leads*') ? 'active' : '' }}" href="{{ route('ecommerce.admin.crm.leads.pipeline') }}">
+                    <i class="ph ph-funnel"></i> Sales Pipeline
+                </a>
+                <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.crm.reviews') ? 'active' : '' }}" href="{{ route('ecommerce.admin.crm.reviews') }}">
+                    <i class="ph ph-star"></i> Reviews
+                </a>
+                <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.crm.coupons*') ? 'active' : '' }}" href="{{ route('ecommerce.admin.crm.coupons') }}">
+                    <i class="ph ph-tag"></i> Coupons
                 </a>
             </nav>
 
@@ -208,20 +173,6 @@
         </main>
     </div>
 
-    <script>
-        document.querySelectorAll('[data-user-menu]').forEach((menu) => {
-            const button = menu.querySelector('[data-user-menu-button]');
-            button?.addEventListener('click', (event) => {
-                event.stopPropagation();
-                const open = menu.dataset.open !== 'true';
-                menu.dataset.open = open ? 'true' : 'false';
-                button.setAttribute('aria-expanded', String(open));
-            });
-            window.addEventListener('click', () => {
-                menu.dataset.open = 'false';
-                button?.setAttribute('aria-expanded', 'false');
-            });
-        });
-    </script>
+    <!-- User menu JS is in components/admin-navbar.blade.php -->
 </body>
 </html>

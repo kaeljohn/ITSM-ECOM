@@ -3,7 +3,6 @@
 namespace Modules\Ecommerce\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Modules\Ecommerce\Models\Product;
 use Modules\Ecommerce\Models\Cart;
 use Modules\Ecommerce\Models\CartItem;
 use Illuminate\Support\Facades\Auth;
@@ -190,24 +189,7 @@ class CartController extends Controller
         $discount = 0; 
         $total = $subtotal + $shipping - $discount;
 
-        // Recommendations
-        $recommendations = collect();
-        $models = [
-            \Modules\Ecommerce\Models\AccessoryKeyboard::class,
-            \Modules\Ecommerce\Models\AccessoryHeadset::class,
-            \Modules\Ecommerce\Models\AccessoryMouse::class,
-            \Modules\Ecommerce\Models\AccessoryMousePad::class,
-            \Modules\Ecommerce\Models\AccessoryMonitor::class,
-        ];
-        foreach ($models as $model) {
-            try {
-                $items = $model::inRandomOrder()->limit(2)->get();
-                $recommendations = $recommendations->merge($items);
-            } catch (\Exception $e) {}
-        }
-        $recommendations = $recommendations->shuffle()->take(8);
-
-        return view('ecommerce::cart', compact('cart', 'subtotal', 'shipping', 'discount', 'total', 'freeShippingThreshold', 'recommendations'));
+        return view('ecommerce::cart', compact('cart', 'subtotal', 'shipping', 'discount', 'total', 'freeShippingThreshold'));
     }
 
     private function formatDbCartItems($cart)

@@ -35,6 +35,7 @@ class EcommerceAdminController extends Controller
             'orderCount' => Order::count(),
             'bomCount' => DB::connection('manufacturing')->table('product_boms')->where('client_id', $clientId)->where('status', 'active')->count(),
             'recentListings' => StorefrontListing::latest()->take(5)->get(),
+            'recentOrders' => Order::with('items')->latest()->take(5)->get(),
         ]);
     }
 
@@ -127,7 +128,7 @@ class EcommerceAdminController extends Controller
             return response()->json(['message' => 'Saved successfully']);
         }
 
-        return redirect()->route('ecommerce.admin.layout.edit', ['context' => $request->query('context', 'home')])->with('success', 'Draft saved. Preview it, then publish when you are ready.');
+        return redirect()->route('ecommerce.admin.layout.edit', ['context' => $request->query('context', 'home')]);
     }
 
     public function previewLayout(Request $request)
@@ -178,6 +179,13 @@ class EcommerceAdminController extends Controller
                     return app(SearchController::class)->index($request);
                 case 'notifications':
                     return view('ecommerce::notifications');
+                case 'contact':
+                case 'shipping':
+                case 'returns':
+                case 'about':
+                case 'careers':
+                case 'affiliates':
+                    return app(\Modules\Ecommerce\Http\Controllers\PageController::class)->show($blueprint);
             }
         }
 
@@ -433,6 +441,75 @@ class EcommerceAdminController extends Controller
             'footer_company_links' => ['nullable', 'array', 'max:10'],
             'footer_company_links.*.label' => ['nullable', 'string', 'max:60'],
             'footer_company_links.*.url' => ['nullable', 'string', 'max:255'],
+            'support_pages' => ['nullable', 'array'],
+            'support_pages.contact' => ['nullable', 'array'],
+            'support_pages.contact.title' => ['nullable', 'string', 'max:160'],
+            'support_pages.contact.subtitle' => ['nullable', 'string', 'max:300'],
+            'support_pages.contact.cards' => ['nullable', 'array', 'max:10'],
+            'support_pages.contact.cards.*.icon' => ['nullable', 'string', 'max:30'],
+            'support_pages.contact.cards.*.title' => ['nullable', 'string', 'max:60'],
+            'support_pages.contact.cards.*.detail' => ['nullable', 'string', 'max:100'],
+            'support_pages.contact.cards.*.sub' => ['nullable', 'string', 'max:100'],
+            'support_pages.contact.faq_title' => ['nullable', 'string', 'max:160'],
+            'support_pages.contact.faq_items' => ['nullable', 'array', 'max:30'],
+            'support_pages.contact.faq_items.*.q' => ['nullable', 'string', 'max:300'],
+            'support_pages.contact.faq_items.*.a' => ['nullable', 'string', 'max:800'],
+            'support_pages.shipping' => ['nullable', 'array'],
+            'support_pages.shipping.title' => ['nullable', 'string', 'max:160'],
+            'support_pages.shipping.subtitle' => ['nullable', 'string', 'max:300'],
+            'support_pages.shipping.rates' => ['nullable', 'array', 'max:10'],
+            'support_pages.shipping.rates.*.label' => ['nullable', 'string', 'max:80'],
+            'support_pages.shipping.rates.*.desc' => ['nullable', 'string', 'max:150'],
+            'support_pages.shipping.rates.*.price' => ['nullable', 'string', 'max:20'],
+            'support_pages.shipping.rates.*.highlighted' => ['nullable', 'boolean'],
+            'support_pages.shipping.processing' => ['nullable', 'array', 'max:10'],
+            'support_pages.shipping.processing.*.label' => ['nullable', 'string', 'max:60'],
+            'support_pages.shipping.processing.*.desc' => ['nullable', 'string', 'max:150'],
+            'support_pages.shipping.tracking_body' => ['nullable', 'string', 'max:500'],
+            'support_pages.returns' => ['nullable', 'array'],
+            'support_pages.returns.title' => ['nullable', 'string', 'max:160'],
+            'support_pages.returns.subtitle' => ['nullable', 'string', 'max:300'],
+            'support_pages.returns.warranty_title' => ['nullable', 'string', 'max:160'],
+            'support_pages.returns.warranty_sub' => ['nullable', 'string', 'max:200'],
+            'support_pages.returns.warranty_body' => ['nullable', 'string', 'max:800'],
+            'support_pages.returns.policy' => ['nullable', 'array', 'max:10'],
+            'support_pages.returns.policy.*.icon' => ['nullable', 'string', 'max:20'],
+            'support_pages.returns.policy.*.color' => ['nullable', 'string', 'max:10'],
+            'support_pages.returns.policy.*.title' => ['nullable', 'string', 'max:80'],
+            'support_pages.returns.policy.*.desc' => ['nullable', 'string', 'max:300'],
+            'support_pages.returns.process_title' => ['nullable', 'string', 'max:160'],
+            'support_pages.returns.process_sub' => ['nullable', 'string', 'max:200'],
+            'support_pages.returns.steps' => ['nullable', 'array', 'max:10'],
+            'support_pages.returns.steps.*.num' => ['nullable', 'integer'],
+            'support_pages.returns.steps.*.title' => ['nullable', 'string', 'max:80'],
+            'support_pages.returns.steps.*.desc' => ['nullable', 'string', 'max:300'],
+            'company_pages' => ['nullable', 'array'],
+            'company_pages.about' => ['nullable', 'array'],
+            'company_pages.about.title' => ['nullable', 'string', 'max:160'],
+            'company_pages.about.subtitle' => ['nullable', 'string', 'max:300'],
+            'company_pages.about.story' => ['nullable', 'string', 'max:1000'],
+            'company_pages.about.values' => ['nullable', 'array', 'max:10'],
+            'company_pages.about.values.*.icon' => ['nullable', 'string', 'max:30'],
+            'company_pages.about.values.*.title' => ['nullable', 'string', 'max:60'],
+            'company_pages.about.values.*.description' => ['nullable', 'string', 'max:200'],
+            'company_pages.about.cta_label' => ['nullable', 'string', 'max:60'],
+            'company_pages.careers' => ['nullable', 'array'],
+            'company_pages.careers.title' => ['nullable', 'string', 'max:160'],
+            'company_pages.careers.subtitle' => ['nullable', 'string', 'max:300'],
+            'company_pages.careers.body' => ['nullable', 'string', 'max:1000'],
+            'company_pages.careers.open_positions' => ['nullable', 'array', 'max:30'],
+            'company_pages.careers.open_positions.*.title' => ['nullable', 'string', 'max:100'],
+            'company_pages.careers.open_positions.*.location' => ['nullable', 'string', 'max:100'],
+            'company_pages.careers.open_positions.*.type' => ['nullable', 'string', 'max:50'],
+            'company_pages.affiliates' => ['nullable', 'array'],
+            'company_pages.affiliates.title' => ['nullable', 'string', 'max:160'],
+            'company_pages.affiliates.subtitle' => ['nullable', 'string', 'max:300'],
+            'company_pages.affiliates.body' => ['nullable', 'string', 'max:1000'],
+            'company_pages.affiliates.benefits' => ['nullable', 'array', 'max:10'],
+            'company_pages.affiliates.benefits.*.icon' => ['nullable', 'string', 'max:30'],
+            'company_pages.affiliates.benefits.*.title' => ['nullable', 'string', 'max:60'],
+            'company_pages.affiliates.benefits.*.description' => ['nullable', 'string', 'max:200'],
+            'company_pages.affiliates.cta_label' => ['nullable', 'string', 'max:60'],
         ]);
 
         $context = $request->query('context', 'home');
@@ -506,6 +583,8 @@ class EcommerceAdminController extends Controller
             'accent_color' => $validated['accent_color'] ?? $current['accent_color'] ?? '#f59e0b',
             'logo_path' => $current['logo_path'] ?? null,
             'custom_pages' => $this->mergeCustomPages($validated['custom_pages'] ?? [], $current['custom_pages'] ?? []),
+            'support_pages' => $validated['support_pages'] ?? $current['support_pages'] ?? [],
+            'company_pages' => $validated['company_pages'] ?? $current['company_pages'] ?? [],
             'sections' => $sections,
             'navbar' => [
                 'announcement_enabled' => $request->has('announcement_enabled') ? $request->boolean('announcement_enabled') : ($current['navbar']['announcement_enabled'] ?? true),

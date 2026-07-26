@@ -77,7 +77,7 @@ class CollectionsController extends Controller
                         $dummyConfigs->push($found);
                     } else {
                         $dummy = new \Modules\Ecommerce\Models\StorefrontListing();
-                        $dummy->id = $listingId ?? 'dummy-' . $index;
+                        $dummy->id = $listingId ? (int) $listingId : -(1 + $index);
                         $dummy->name = 'Placeholder Item ' . ($index + 1);
                         $dummy->price = 1000;
                         $dummy->image_url = 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?auto=format&fit=crop&w=800&q=80';
@@ -100,7 +100,7 @@ class CollectionsController extends Controller
             $configs = $laptops;
             if ($isPreview && $configs->isEmpty()) {
                  $dummy = new \Modules\Ecommerce\Models\StorefrontListing();
-                 $dummy->id = 'dummy-0';
+                 $dummy->id = -(1);
                  $dummy->name = 'Placeholder Item';
                  $dummy->price = 1000;
                  $dummy->image_url = 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?auto=format&fit=crop&w=800&q=80';

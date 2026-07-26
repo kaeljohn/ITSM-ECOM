@@ -185,7 +185,7 @@
                         <div class="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse"></div>
                         <div class="flex items-center relative z-10">
                             <img src="{{ $logoUrl }}" alt="{{ $storefrontName }} logo" class="h-20 w-auto object-contain animate-spin-fast">
-                            <span class="text-4xl md:text-5xl font-black text-white tracking-widest animate-slide-text">{{ $storefrontName }}</span>
+                            <span class="text-4xl md:text-5xl font-black text-white tracking-widest animate-slide-text">{{ Str::upper($storefrontName) }}</span>
                         </div>
                     </div>
                 `);
@@ -762,37 +762,29 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-6" data-preview-block="panel-categories-grid" data-parent-section="categories">
-                    <!-- Top Row: 2 Items -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Prebuilt Gaming PCs -->
-                        <div class="liquid-glass backdrop-blur-2xl bg-black/40 rounded-2xl relative overflow-hidden group h-[350px] lg:h-[400px] border border-white/5 hover:border-primary/50 transition-all duration-500 hover:shadow-glow-lg flex flex-col justify-end">
-                            <img src="https://images.unsplash.com/photo-1547082299-de196ea013d6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="Prebuilt PCs" class="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 opacity-30 mix-blend-lighten" style="mask-image: linear-gradient(to top, transparent, black 80%); -webkit-mask-image: linear-gradient(to top, transparent, black 80%);">
+                @php
+                    $catBlocks = $section['blocks'] ?? [];
+                    $defaultCatBlocks = [
+                        ['title' => 'Category Showcase 1', 'description' => 'Browse our first curated category of products.', 'image' => 'https://images.unsplash.com/photo-1547082299-de196ea013d6?auto=format&fit=crop&w=800&q=80'],
+                        ['title' => 'Category Showcase 2', 'description' => 'Discover featured products in our second category.', 'image' => 'https://images.unsplash.com/photo-1618339220157-daa2cd9ade56?auto=format&fit=crop&w=800&q=80'],
+                        ['title' => 'Category Showcase 3', 'description' => 'Explore our third category selection.', 'image' => 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?auto=format&fit=crop&w=800&q=80'],
+                    ];
+                    $catBlocks = !empty($catBlocks) ? $catBlocks : $defaultCatBlocks;
+                @endphp
 
-                            <div class="relative z-10 p-8 border-t border-white/5 bg-black/60 backdrop-blur-md">
-                                <div class="text-gray-500 text-[10px] uppercase font-bold tracking-widest mb-2">Ready to ship</div>
-                                <h3 class="text-white text-3xl font-black tracking-wide uppercase mb-4 group-hover:text-primary transition-colors">Prebuilt PCs</h3>
-                                <p class="text-sm text-gray-400 mb-8 max-w-md">Browse through our full range of ready-to-ship prebuilt gaming PCs.</p>
-                                <a href="#" class="border border-primary/50 hover:border-primary text-primary hover:text-white hover:bg-primary text-[10px] font-black uppercase tracking-widest px-6 py-3 transition-all flex items-center gap-2 w-max">
-                                    Browse &rarr;
-                                </a>
-                            </div>
-                        </div>
-
-                        <!-- Custom PC Builder -->
-                        <div class="liquid-glass backdrop-blur-2xl bg-black/40 rounded-2xl relative overflow-hidden group h-[350px] lg:h-[400px] border border-white/5 hover:border-primary/50 transition-all duration-500 hover:shadow-glow-lg flex flex-col justify-end">
-                            <img src="https://images.unsplash.com/photo-1618339220157-daa2cd9ade56?q=80&w=1935&auto=format&fit=crop" alt="Custom PC Builder" class="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 opacity-30 mix-blend-lighten" style="mask-image: linear-gradient(to top, transparent, black 80%); -webkit-mask-image: linear-gradient(to top, transparent, black 80%);">
-
-                            <div class="relative z-10 p-8 border-t border-white/5 bg-black/60 backdrop-blur-md">
-                                <div class="text-gray-500 text-[10px] uppercase font-bold tracking-widest mb-2">Built for you</div>
-                                <h3 class="text-white text-3xl font-black tracking-wide uppercase mb-4 group-hover:text-primary transition-colors">Custom Gaming PCs</h3>
-                                <p class="text-sm text-gray-400 mb-8 max-w-md">Customize your PC with top brands, with no compatibility worries.</p>
-                                <a href="#" class="border border-primary/50 hover:border-primary text-primary hover:text-white hover:bg-primary text-[10px] font-black uppercase tracking-widest px-6 py-3 transition-all flex items-center gap-2 w-max">
-                                    Start Building &rarr;
-                                </a>
-                            </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    @foreach($catBlocks as $ci => $cat)
+                    <div data-cat-card="{{ $ci }}" data-preview-block="panel-categories-card-{{ $ci + 1 }}" data-parent-section="categories" class="liquid-glass backdrop-blur-2xl bg-black/40 rounded-2xl relative overflow-hidden group h-[350px] lg:h-[400px] border border-white/5 hover:border-primary/50 transition-all duration-500 hover:shadow-glow-lg flex flex-col justify-end">
+                        <img src="{{ $cat['image'] ?? $defaultCatBlocks[$ci]['image'] }}" alt="{{ $cat['title'] ?? '' }}" class="cat-card-img absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 opacity-30 mix-blend-lighten" style="mask-image: linear-gradient(to top, transparent, black 80%); -webkit-mask-image: linear-gradient(to top, transparent, black 80%);">
+                        <div class="relative z-10 p-8 border-t border-white/5 bg-black/60 backdrop-blur-md">
+                            <h3 class="cat-card-title text-white text-3xl font-black tracking-wide uppercase mb-4 group-hover:text-primary transition-colors">{{ $cat['title'] ?? $defaultCatBlocks[$ci]['title'] }}</h3>
+                            <p class="cat-card-desc text-sm text-gray-400 mb-8 max-w-md">{{ $cat['description'] ?? $defaultCatBlocks[$ci]['description'] }}</p>
+                            <a href="{{ route('ecommerce.categories.category' . ($ci + 1), ['store' => $store]) }}" class="cat-card-url border border-primary/50 hover:border-primary text-primary hover:text-white hover:bg-primary text-[10px] font-black uppercase tracking-widest px-6 py-3 transition-all flex items-center gap-2 w-max">
+                                Shop Now &rarr;
+                            </a>
                         </div>
                     </div>
+                    @endforeach
                 </div>
             </section>
 

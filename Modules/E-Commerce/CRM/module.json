@@ -1,0 +1,11 @@
+{
+    "name": "CRM",
+    "alias": "crm",
+    "description": "E-Commerce CRM — customer profiles, segments, reviews, abandoned cart recovery",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Ecommerce\\CRM\\Providers\\CrmServiceProvider"
+    ],
+    "files": []
+}
