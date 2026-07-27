@@ -1,7 +1,7 @@
 window.addEventListener('load', () => {
     const preloader = document.getElementById('preloader');
     if (preloader) {
-        const visitKey = preloader.dataset.visitKey || 'techforge_visited';
+        const visitKey = preloader.dataset.visitKey || 'storefront_visited';
         if (!sessionStorage.getItem(visitKey)) {
             sessionStorage.setItem(visitKey, 'true');
             setTimeout(() => {

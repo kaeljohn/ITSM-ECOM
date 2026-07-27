@@ -214,6 +214,37 @@
             color: {{ $primaryHex }};
             border-color: {{ $primaryHex }};
         }
+
+        /* ── Step Transition Animations ── */
+        .step-content {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .step-content.step-hidden {
+            display: none;
+        }
+        .step-content.step-leaving-forward {
+            opacity: 0;
+            transform: translateX(-24px);
+        }
+        .step-content.step-leaving-back {
+            opacity: 0;
+            transform: translateX(24px);
+        }
+        .step-content.step-entering-forward {
+            opacity: 0;
+            transform: translateX(24px);
+        }
+        .step-content.step-entering-back {
+            opacity: 0;
+            transform: translateX(-24px);
+        }
+
+        /* Progress bar connector animation */
+        .progress-connector {
+            transition: background-color 0.5s ease, box-shadow 0.5s ease;
+        }
     </style>
 </head>
 <body class="relative antialiased selection:bg-primary selection:text-white pb-20">
@@ -225,9 +256,7 @@
     <header class="py-6 mb-4">
         <div class="container mx-auto px-4 max-w-6xl">
             <a href="{{ url('/') }}" class="inline-flex items-center gap-3 group">
-                <div class="w-10 h-10 bg-gradient-to-br from-primary to-orange-400 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(255,107,0,0.4)] group-hover:shadow-[0_0_25px_rgba(255,107,0,0.6)] transition-all">
-                    <img src="{{ $logoUrl }}" alt="{{ $storefrontName }} Logo" class="h-6 w-auto object-contain">
-                </div>
+                <img src="{{ $logoUrl }}" alt="{{ $storefrontName }} Logo" class="h-9 w-auto group-hover:opacity-90 transition-opacity">
                 <span class="text-xl font-bold tracking-wide text-white tech-font group-hover:text-primary transition-colors">{{ strtoupper($storefrontName) }}</span>
             </a>
         </div>
@@ -241,12 +270,16 @@
                 <span class="step-num">1</span>
                 <span>Shipping</span>
             </div>
-            <div class="flex-1 h-px bg-white/10"></div>
+            <div class="flex-1 h-px bg-white/10 relative">
+                <div id="progress-connect-1" class="absolute inset-0 bg-white/10 progress-connector"></div>
+            </div>
             <div id="step-indicator-2" class="step-indicator">
                 <span class="step-num">2</span>
                 <span>Payment</span>
             </div>
-            <div class="flex-1 h-px bg-white/10"></div>
+            <div class="flex-1 h-px bg-white/10 relative">
+                <div id="progress-connect-2" class="absolute inset-0 bg-white/10 progress-connector"></div>
+            </div>
             <div id="step-indicator-3" class="step-indicator">
                 <span class="step-num">3</span>
                 <span>Review</span>
@@ -260,8 +293,8 @@
                 <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none"></div>
 
                 <!-- STEP 1: SHIPPING -->
-                <div id="step-1-content" class="space-y-6 relative z-10 animate-fade-in">
-                    
+                <div id="step-1-content" class="step-content space-y-6 relative z-10">
+
                     <!-- Dispatch Banner -->
                     <div class="bg-[#1a1a00] border border-[#ffaa00]/30 rounded-md p-4 flex items-center gap-3">
                         <i class="ph ph-clock text-[#ffaa00] text-xl"></i>
@@ -354,7 +387,7 @@
                 </div>
 
                 <!-- STEP 2: PAYMENT -->
-                <div id="step-2-content" class="space-y-8 hidden relative z-10 animate-fade-in">
+                <div id="step-2-content" class="step-content step-hidden space-y-8 relative z-10">
                     
                     <section>
                         <div class="section-title">Payment Method</div>
@@ -437,7 +470,7 @@
                 </div>
 
                 <!-- STEP 3: REVIEW -->
-                <div id="step-3-content" class="space-y-8 hidden relative z-10 animate-fade-in">
+                <div id="step-3-content" class="step-content step-hidden space-y-8 relative z-10">
                     
                     <section>
                         <div class="section-title">Review Details</div>
@@ -470,7 +503,7 @@
                         </button>
                     </div>
                     
-                    <p class="text-xs text-gray-500 text-center mt-4">By placing your order, you agree to TechForge's privacy notice and conditions of use.</p>
+                    <p class="text-xs text-gray-500 text-center mt-4">By placing your order, you agree to our privacy notice and conditions of use.</p>
                 </div>
             </div>
 
@@ -488,7 +521,7 @@
                         <div class="flex gap-4 pb-4 border-b border-white/5 last:border-0 last:pb-0">
                             <div class="w-16 h-16 bg-[#000] border border-white/10 rounded flex items-center justify-center overflow-hidden p-1 shrink-0">
                                 @if(isset($item['image_url']) && !empty($item['image_url']))
-                                    <img src="{{ $item['image_url'] }}" alt="{{ $item['name'] }}" class="max-w-full max-h-full object-contain">
+                                    <img src="{{ $item['image_url'] }}" alt="{{ $item['name'] }}" loading="lazy" class="lazy-img max-w-full max-h-full object-contain">
                                 @else
                                     <i class="ph-light ph-desktop text-2xl text-gray-500"></i>
                                 @endif
@@ -600,8 +633,13 @@
 
         const subtotal = {{ $subtotal }};
         let currentStep = 1;
+        let isTransitioning = false;
 
         function goToStep(step) {
+            // Prevent rapid clicks during animation
+            if (isTransitioning) return;
+            if (step === currentStep) return;
+
             // Validation before leaving step 1
             if (step === 2 && currentStep === 1) {
                 const selectedAddress = document.querySelector('input[name="addressId"]:checked');
@@ -613,7 +651,6 @@
             
             // Setup review data if going to step 3
             if (step === 3) {
-                // Address review
                 const selectedAddress = document.querySelector('input[name="addressId"]:checked');
                 if (selectedAddress) {
                     const label = selectedAddress.closest('label');
@@ -625,7 +662,6 @@
                     document.getElementById('review-address-text').textContent = [name, ...lines].filter(Boolean).join(' — ');
                 }
                 
-                // Payment review
                 const paymentInput = document.querySelector('input[name="paymentMethod"]:checked');
                 if (paymentInput) {
                     const val = paymentInput.value;
@@ -640,32 +676,85 @@
                 }
             }
 
-            // Hide all steps
-            document.getElementById('step-1-content').classList.add('hidden');
-            document.getElementById('step-2-content').classList.add('hidden');
-            document.getElementById('step-3-content').classList.add('hidden');
+            isTransitioning = true;
+            const isForward = step > currentStep;
+            const currentEl = document.getElementById('step-' + currentStep + '-content');
+            const targetEl = document.getElementById('step-' + step + '-content');
+
+            // 1. Animate current step out
+            currentEl.classList.remove('step-hidden');
+            currentEl.classList.add(isForward ? 'step-leaving-forward' : 'step-leaving-back');
+
+            // 2. After exit animation, hide current and prepare target
+            setTimeout(function() {
+                currentEl.classList.add('step-hidden');
+                currentEl.classList.remove('step-leaving-forward', 'step-leaving-back');
+
+                // Update progress indicators mid-transition
+                updateIndicators(step);
+
+                // Remove all animation classes from target
+                targetEl.classList.remove('step-hidden', 'step-entering-forward', 'step-entering-back');
+
+                // Force browser layout to register the initial hidden state
+                void targetEl.offsetHeight;
+
+                // Add entering class for starting position
+                targetEl.classList.add(isForward ? 'step-entering-forward' : 'step-entering-back');
+
+                // 3. Force layout again, then animate in
+                void targetEl.offsetHeight;
+
+                // Remove entering class so it transitions to visible (opacity 1, translateX 0)
+                targetEl.classList.remove(isForward ? 'step-entering-forward' : 'step-entering-back');
+
+            }, 400);
+
+            // 4. Cleanup
+            setTimeout(function() {
+                currentStep = step;
+                isTransitioning = false;
+            }, 600);
             
-            // Update indicators
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateIndicators(step) {
+
+            // 5. Cleanup
+            setTimeout(function() {
+                currentStep = step;
+                isTransitioning = false;
+            }, 500);
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updateIndicators(step) {
             for (let i = 1; i <= 3; i++) {
-                const indicator = document.getElementById(`step-indicator-${i}`);
+                const indicator = document.getElementById('step-indicator-' + i);
+                indicator.classList.remove('active', 'completed');
                 if (i < step) {
-                    indicator.classList.remove('active');
                     indicator.classList.add('completed');
                     indicator.querySelector('.step-num').innerHTML = '<i class="ph-bold ph-check"></i>';
                 } else if (i === step) {
                     indicator.classList.add('active');
-                    indicator.classList.remove('completed');
                     indicator.querySelector('.step-num').innerHTML = i;
                 } else {
-                    indicator.classList.remove('active', 'completed');
                     indicator.querySelector('.step-num').innerHTML = i;
                 }
+                // Update progress connector
+                const connector = document.getElementById('progress-connect-' + i);
+                if (connector) {
+                    if (i < step) {
+                        connector.style.backgroundColor = '{{ $primaryHex }}';
+                        connector.style.boxShadow = '0 0 8px {{ $primaryHex }}80';
+                    } else {
+                        connector.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                        connector.style.boxShadow = 'none';
+                    }
+                }
             }
-            
-            // Show new step
-            document.getElementById(`step-${step}-content`).classList.remove('hidden');
-            currentStep = step;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function updateTotals() {
@@ -760,4 +849,4 @@
         });
     </script>
 </body>
-</html>
+</html>

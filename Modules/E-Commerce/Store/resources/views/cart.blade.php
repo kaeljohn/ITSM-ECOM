@@ -231,7 +231,7 @@
                                 <!-- Product Image -->
                                 <div class="w-24 h-24 bg-[#0a0a0a] rounded-xl flex-shrink-0 border border-white/5 flex items-center justify-center overflow-hidden p-2 {{ $detailUrl ? 'group-hover/link:border-primary/40 transition-colors' : '' }}">
                                     @if(isset($item['image_url']) && !empty($item['image_url']))
-                                        <img src="{{ $item['image_url'] }}" alt="{{ $item['name'] }}" class="max-w-full max-h-full object-contain {{ $detailUrl ? 'group-hover/link:scale-110 transition-transform duration-300' : '' }}">
+                                        <img src="{{ $item['image_url'] }}" alt="{{ $item['name'] }}" loading="lazy" class="lazy-img max-w-full max-h-full object-contain {{ $detailUrl ? 'group-hover/link:scale-110 transition-transform duration-300' : '' }}">
                                     @else
                                         <i class="ph-light ph-desktop text-3xl text-gray-600"></i>
                                     @endif

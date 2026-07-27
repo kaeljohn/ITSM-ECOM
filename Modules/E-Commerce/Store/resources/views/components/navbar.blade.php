@@ -13,7 +13,7 @@
         // Fallback for preview mode or when middleware doesn't set it
         // We will pass these as props from storefront.blade.php
         $storefrontName = $storefrontName ?? 'Nexora Store';
-        $store = $store ?? 'techforge';
+        $store = $store ?? 'store';
         $logoUrl = $logoUrl ?? asset('ecommerce/Nexora_Logo.png');
     }
 
@@ -95,7 +95,7 @@
                     <li>
                         <a href="{{ route('ecommerce.listings.show', ['store' => $store, 'listing' => $listing->id]) }}" class="flex items-center gap-3 px-5 py-2.5 hover:bg-white/5 hover:text-primary transition-colors">
                             @if($listing->image_url)
-                                <img src="{{ asset('storage/' . $listing->image_url) }}" alt="" class="w-7 h-7 rounded object-cover">
+                                <img src="{{ asset('storage/' . $listing->image_url) }}" alt="" loading="lazy" class="lazy-img w-7 h-7 rounded object-cover">
                             @else
                                 <i class="ph ph-package text-gray-500"></i>
                             @endif
@@ -168,33 +168,39 @@
             </div>
             @endauth
 
-            <!-- Notification Container -->
-            <div class="relative z-30 shrink-0 group">
-                <!-- Notification Button -->
-                <a href="{{ route('ecommerce.notifications', ['store' => $store]) }}" class="w-11 h-11 flex items-center justify-center rounded-2xl border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all text-gray-300 hover:text-white relative shrink-0">
+            <!-- Customer Notification Bell with Hover Dropdown -->
+            <style>
+                @keyframes notif-pulse-ring {
+                    0% { box-shadow: 0 0 0 0 rgba(255, 107, 0, 0.5), 0 0 0 0 rgba(255, 107, 0, 0.3); }
+                    40% { box-shadow: 0 0 0 10px rgba(255, 107, 0, 0), 0 0 0 20px rgba(255, 107, 0, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(255, 107, 0, 0), 0 0 0 0 rgba(255, 107, 0, 0); }
+                }
+                .customer-notif-pulse {
+                    animation: notif-pulse-ring 1.4s ease-out 2;
+                    border-color: rgba(255, 107, 0, 0.4) !important;
+                }
+                .customer-notif-pulse i {
+                    color: #ff8c33 !important;
+                }
+            </style>
+            <div id="customer-notif-wrap" class="relative z-30 shrink-0 group">
+                <a href="{{ route('ecommerce.notifications', ['store' => $store]) }}" id="customer-notif-btn" class="w-11 h-11 flex items-center justify-center rounded-2xl border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all text-gray-300 hover:text-white relative shrink-0" onmouseenter="this.classList.remove('customer-notif-pulse')">
                     <i class="ph ph-bell text-xl"></i>
-                    <span class="absolute top-[10px] right-[10px] w-2 h-2 bg-primary rounded-full shadow-[0_0_8px_rgba(255,107,0,0.8)]"></span>
+                    <span id="customer-notif-badge" class="hidden absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-[5px] flex items-center justify-center text-[9px] font-bold bg-red-500 text-white rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)]">0</span>
                 </a>
 
-                <!-- Notification Dropdown -->
+                <!-- Notification Dropdown (hover) -->
                 <div class="bg-[#1a1a1a]/90 backdrop-blur-2xl border border-white/10 absolute top-[calc(100%+0.5rem)] right-0 w-80 sm:w-96 rounded-2xl overflow-hidden shadow-2xl p-5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-300 transform group-hover:translate-y-0 -translate-y-2 origin-top">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-bold text-white">Notifications</h3>
-                        <span class="bg-primary/20 text-primary text-[10px] font-bold px-2 py-1 rounded-md">1 New</span>
+                        <span id="customer-dd-count" class="bg-primary/20 text-primary text-[10px] font-bold px-2 py-1 rounded-md hidden">0 New</span>
                     </div>
 
-                    <div class="flex flex-col gap-3 mb-4">
-                        <!-- Notification Item -->
-                        <a href="{{ route('ecommerce.login', ['store' => $store]) }}" class="flex items-start gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors group/item border border-transparent hover:border-white/5">
-                            <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                <i class="ph-fill ph-ticket text-xl text-primary"></i>
-                            </div>
-                            <div class="flex-1 min-w-0 pt-0.5">
-                                <h4 class="text-sm font-bold text-white mb-1 group-hover/item:text-primary transition-colors">Special Offer!</h4>
-                                <p class="text-xs text-gray-400 leading-relaxed">Sign up for an account now to receive a 10% discount voucher on your first order.</p>
-                                <span class="text-[10px] text-gray-500 mt-2 block">Just now</span>
-                            </div>
-                        </a>
+                    <div id="customer-dd-body" class="flex flex-col gap-3 mb-4">
+                        <div class="text-center py-6 text-gray-500 text-sm">
+                            <i class="ph ph-bell-slash text-2xl mb-2 block"></i>
+                            <span>No notifications yet</span>
+                        </div>
                     </div>
 
                     <div class="flex justify-center pt-3 border-t border-white/10 mt-2">
@@ -204,6 +210,140 @@
                     </div>
                 </div>
             </div>
+
+            <script>
+            (function() {
+                var badge = document.getElementById('customer-notif-badge');
+                var ddBody = document.getElementById('customer-dd-body');
+                var ddCount = document.getElementById('customer-dd-count');
+                if (!badge) return;
+
+                @auth('ecommerce')
+                var unreadUrl = '{{ route("ecommerce.api.notifications.unread", ["store" => $store]) }}';
+                var markAllUrl = '{{ route("ecommerce.api.notifications.mark-all-read", ["store" => $store]) }}';
+                var markOneUrl = '{{ route("ecommerce.api.notifications.mark-read", ["store" => $store, "id" => "PLACEHOLDER"]) }}';
+                var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                var pollTimer = null;
+                var previousCount = -1;
+
+                function triggerPulse() {
+                    var btn = document.getElementById('customer-notif-btn');
+                    if (!btn) return;
+                    btn.classList.add('customer-notif-pulse');
+                    btn.addEventListener('animationend', function() {
+                        btn.classList.remove('customer-notif-pulse');
+                    }, { once: true });
+                }
+
+                function fetchCount() {
+                    fetch(unreadUrl, { headers: { 'Accept': 'application/json' } })
+                        .then(function(r) { return r.ok ? r.json() : null; })
+                        .then(function(resp) {
+                            if (!resp || !resp.success) return;
+                            var data = resp.data;
+                            var count = data.count || 0;
+
+                            // Detect new notification and trigger pulse
+                            if (previousCount >= 0 && count > previousCount) {
+                                triggerPulse();
+                            }
+                            previousCount = count;
+
+                            badge.textContent = count;
+                            badge.classList.toggle('hidden', count === 0);
+                            // Update dropdown content
+                            renderDropdown(data.notifications, count);
+                        })
+                        .catch(function() {});
+                }
+
+                function renderDropdown(notifications, count) {
+                    // Update badge count in dropdown header
+                    if (ddCount) {
+                        ddCount.textContent = count + ' New';
+                        ddCount.classList.toggle('hidden', count === 0);
+                    }
+                    if (!ddBody) return;
+
+                    if (!notifications || notifications.length === 0) {
+                        ddBody.innerHTML = '<div class="text-center py-6 text-gray-500 text-sm"><i class="ph ph-bell-slash text-2xl mb-2 block"></i><span>All caught up!</span></div>';
+                        return;
+                    }
+
+                    var html = '';
+                    notifications.slice(0, 5).forEach(function(n) {
+                        var iconColor = n.icon_color || 'primary';
+                        var icon = n.icon || 'ph-megaphone';
+                        html += '<a href="' + (n.link || '{{ route("ecommerce.notifications", ["store" => $store]) }}') + '" class="flex items-start gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors group/item border border-transparent hover:border-white/5 notif-dd-item" data-id="' + n.id + '">';
+                        html += '   <div class="w-10 h-10 rounded-full bg-' + iconColor + '/20 flex items-center justify-center shrink-0">';
+                        html += '       <i class="ph-fill ' + icon + ' text-xl text-' + iconColor + '"></i>';
+                        html += '   </div>';
+                        html += '   <div class="flex-1 min-w-0 pt-0.5">';
+                        html += '       <h4 class="text-sm font-bold text-white mb-1 group-hover/item:text-primary transition-colors">' + escapeHtml(n.title) + '</h4>';
+                        if (n.body) html += '       <p class="text-xs text-gray-400 leading-relaxed">' + escapeHtml(n.body) + '</p>';
+                        html += '       <span class="text-[10px] text-gray-500 mt-2 block">' + timeAgo(n.created_at) + '</span>';
+                        html += '   </div>';
+                        html += '</a>';
+                    });
+
+                    ddBody.innerHTML = html;
+
+                    // Click to mark as read
+                    ddBody.querySelectorAll('.notif-dd-item').forEach(function(el) {
+                        el.addEventListener('click', function(e) {
+                            var id = el.getAttribute('data-id');
+                            if (id) {
+                                fetch(markOneUrl.replace('PLACEHOLDER', id), {
+                                    method: 'POST',
+                                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+                                }).catch(function() {});
+                            }
+                        });
+                    });
+                }
+
+                function escapeHtml(str) {
+                    if (!str) return '';
+                    var div = document.createElement('div');
+                    div.appendChild(document.createTextNode(str));
+                    return div.innerHTML;
+                }
+
+                function timeAgo(dateStr) {
+                    if (!dateStr) return '';
+                    var now = new Date();
+                    var date = new Date(dateStr);
+                    var diffMs = now - date;
+                    var diffSec = Math.floor(diffMs / 1000);
+                    if (diffSec < 60) return 'just now';
+                    var diffMin = Math.floor(diffSec / 60);
+                    if (diffMin < 60) return diffMin + 'm ago';
+                    var diffHr = Math.floor(diffMin / 60);
+                    if (diffHr < 24) return diffHr + 'h ago';
+                    var diffDay = Math.floor(diffHr / 24);
+                    if (diffDay < 7) return diffDay + 'd ago';
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                }
+
+                function startPolling() {
+                    if (pollTimer) clearInterval(pollTimer);
+                    fetchCount();
+                    pollTimer = setInterval(fetchCount, 30000);
+                }
+
+                function stopPolling() {
+                    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+                }
+
+                // Pause polling when tab is hidden
+                document.addEventListener('visibilitychange', function() {
+                    if (document.hidden) stopPolling(); else startPolling();
+                });
+
+                startPolling();
+                @endauth
+            })();
+            </script>
 
             <!-- Cart Container -->
             <div id="cart-container" class="relative z-30 shrink-0 group/cart py-2">

@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
+use Modules\Ecommerce\Http\Controllers\ChatController;
 
 // Storefront route group - shared between subdomain and localhost
 $storefrontRoutes = function () {
@@ -52,9 +53,35 @@ $storefrontRoutes = function () {
         return redirect()->route('ecommerce.login');
     })->name('cart.checkout.redirect');
 
-    Route::get('/notifications', function () {
-        return view('ecommerce::notifications');
+    Route::get('/notifications', function (\Illuminate\Http\Request $request) {
+        $user = \Illuminate\Support\Facades\Auth::guard('ecommerce')->user();
+        $storefrontCompany = $request->attributes->get('ecommerce_company');
+        $clientId = $storefrontCompany?->id;
+
+        $notifications = collect();
+        $unreadCount = 0;
+
+        if ($user && $clientId) {
+            $notifications = \Modules\Ecommerce\Models\CustomerNotification::forClient($clientId)
+                ->forUser($user->id)
+                ->orderByDesc('created_at')
+                ->paginate(25);
+            $unreadCount = \Modules\Ecommerce\Models\CustomerNotification::forClient($clientId)
+                ->forUser($user->id)
+                ->unread()
+                ->count();
+        }
+
+        return view('ecommerce::notifications', compact('notifications', 'unreadCount'));
     })->name('notifications');
+
+    // Customer Notification API (authenticated via middleware, but unread endpoint also works for guests)
+    Route::prefix('api/notifications')->name('api.notifications.')->group(function () {
+        Route::get('/unread', [\Modules\Ecommerce\Http\Controllers\CustomerNotificationController::class, 'unread'])->name('unread');
+        Route::get('/sse', [\Modules\Ecommerce\Http\Controllers\CustomerNotificationController::class, 'sse'])->name('sse');
+        Route::post('/{id}/mark-read', [\Modules\Ecommerce\Http\Controllers\CustomerNotificationController::class, 'markRead'])->name('mark-read');
+        Route::post('/mark-all-read', [\Modules\Ecommerce\Http\Controllers\CustomerNotificationController::class, 'markAllRead'])->name('mark-all-read');
+    });
 
     Route::middleware([\Modules\Ecommerce\Http\Middleware\RequireEcommerceAuth::class])->group(function () {
         Route::get('/account/profile', [\Modules\Ecommerce\Http\Controllers\AccountController::class, 'index'])->name('account.profile');
@@ -104,6 +131,14 @@ $storefrontRoutes = function () {
     Route::get('/prebuilt-pcs', [\Modules\Ecommerce\Http\Controllers\ItemController::class, 'index'])->name('prebuilt-pcs');
 
     // Support / Info Pages — using closures to avoid defaults() parameter resolution quirks
+    // Chat API (authenticated)
+    Route::middleware([\Modules\Ecommerce\Http\Middleware\RequireEcommerceAuth::class])->prefix('api/chat')->name('api.chat.')->group(function () {
+        Route::get('/messages', [ChatController::class, 'customerMessages'])->name('messages');
+        Route::post('/send', [ChatController::class, 'customerSend'])->name('send');
+        Route::get('/poll', [ChatController::class, 'customerPoll'])->name('poll');
+    });
+
+    // Pages
     Route::get('/contact', function () { return app(\Modules\Ecommerce\Http\Controllers\PageController::class)->show('contact'); })->name('pages.contact');
     Route::get('/shipping', function () { return app(\Modules\Ecommerce\Http\Controllers\PageController::class)->show('shipping'); })->name('pages.shipping');
     Route::get('/returns', function () { return app(\Modules\Ecommerce\Http\Controllers\PageController::class)->show('returns'); })->name('pages.returns');
@@ -148,6 +183,9 @@ Route::name('ecommerce.')->group(function () {
         Route::get('/login', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'login'])->name('login');
         Route::post('/login', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'authenticate'])->name('login.post');
 
+        // Public API: suggested listings for storefront search dropdown (no auth required)
+        Route::get('/crm/api/suggested-listings', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'suggestedListings'])->name('suggested-listings');
+
         Route::middleware('ecommerce.admin')->group(function (): void {
             Route::get('/', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'dashboard'])->name('dashboard');
             Route::get('/listings', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'listings'])->name('listings');
@@ -157,10 +195,26 @@ Route::name('ecommerce.')->group(function () {
             Route::put('/listings/{listing}', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'updateListing'])->name('listings.update');
             Route::delete('/listings/{listing}', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'destroyListing'])->name('listings.destroy');
             Route::get('/orders', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'orders'])->name('orders');
+            Route::post('/orders/{id}/status', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'updateOrderStatus'])->name('orders.status');
             Route::get('/layout', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'editLayout'])->name('layout.edit');
             Route::put('/layout', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'saveLayout'])->name('layout.save');
             Route::get('/layout/preview', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'previewLayout'])->name('layout.preview');
             Route::post('/layout/publish', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'publishLayout'])->name('layout.publish');
+
+            // Customer Notifications
+            // CRM Chat API
+            Route::prefix('crm/api/chat')->name('crm.api.chat.')->group(function () {
+                Route::get('/conversations', [ChatController::class, 'adminConversations'])->name('conversations');
+                Route::get('/{userId}', [ChatController::class, 'adminMessages'])->name('messages');
+                Route::post('/{userId}', [ChatController::class, 'adminSend'])->name('send');
+                Route::get('/{userId}/poll', [ChatController::class, 'adminPoll'])->name('poll');
+            });
+
+            // Customer Notifications
+            Route::get('/customer-notifications', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'customerNotifications'])->name('customer-notifications');
+            Route::post('/customer-notifications', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'customerNotificationsStore'])->name('customer-notifications.store');
+            Route::delete('/customer-notifications/{id}', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'customerNotificationsDelete'])->name('customer-notifications.destroy');
+
             Route::post('/logout', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'logout'])->name('logout');
         });
     });

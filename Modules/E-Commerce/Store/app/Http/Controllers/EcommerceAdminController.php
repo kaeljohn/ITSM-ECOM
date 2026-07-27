@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Modules\Ecommerce\Models\CustomerNotification;
 use Modules\Ecommerce\Models\Order;
 use Modules\Ecommerce\Models\StorefrontLayout;
 use Modules\Ecommerce\Models\StorefrontListing;
@@ -66,7 +67,73 @@ class EcommerceAdminController extends Controller
         return redirect()->route('ecommerce.admin.listings')->with('success', 'Storefront listing removed.');
     }
 
+    /**
+     * GET /ecommerce-admin/crm/api/suggested-listings
+     * Return active storefront listings as JSON for the search dropdown.
+     */
+    public function suggestedListings(): \Illuminate\Http\JsonResponse
+    {
+        $store = optional($this->company())->ecommerce_slug ?? 'store';
+
+        $listings = StorefrontListing::where('status', 'active')
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get()
+            ->map(fn($l) => [
+                'id' => $l->id,
+                'name' => $l->name,
+                'price' => $l->price,
+                'image_url' => $l->image_url ? asset('storage/' . $l->image_url) : null,
+                'url' => route('ecommerce.home', ['store' => $store]) . '/listings/' . $l->id,
+            ]);
+
+        return response()->json($listings);
+    }
+
     public function orders() { return view('ecommerce::admin.orders', ['orders' => Order::latest()->paginate(20)]); }
+
+    public function updateOrderStatus(Request $request, string $id): \Illuminate\Http\JsonResponse
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:pending,processing,shipped,delivered,cancelled',
+        ]);
+
+        $order = Order::findOrFail($id);
+        $oldStatus = $order->status;
+        $newStatus = $validated['status'];
+
+        $order->update(['status' => $newStatus]);
+
+        // Notify the customer
+        try {
+            $statusLabels = [
+                'pending' => 'Pending',
+                'processing' => 'Processing',
+                'shipped' => 'Shipped',
+                'delivered' => 'Delivered',
+                'cancelled' => 'Cancelled',
+            ];
+
+            $company = $this->company();
+            $store = $company->ecommerce_slug ?? 'store';
+
+            CustomerNotification::create([
+                'client_id' => $company->id,
+                'user_id' => $order->user_id,
+                'type' => 'order_status',
+                'title' => 'Order ' . $statusLabels[$newStatus],
+                'body' => 'Your order ' . $order->tracking_number . ' has been updated to: ' . $statusLabels[$newStatus] . '.',
+                'link' => route('ecommerce.account.orders.show', ['store' => $store, 'id' => $order->id]),
+                'icon' => $newStatus === 'delivered' ? 'ph-check-circle' : ($newStatus === 'cancelled' ? 'ph-x-circle' : 'ph-truck'),
+                'icon_color' => $newStatus === 'delivered' ? 'green' : ($newStatus === 'cancelled' ? 'red' : 'primary'),
+                'is_read' => false,
+            ]);
+        } catch (\Throwable $e) {
+            \Log::warning('Failed to create order status notification: ' . $e->getMessage());
+        }
+
+        return response()->json(['success' => true, 'message' => 'Order status updated to ' . $newStatus]);
+    }
 
     public function editLayout(Request $request)
     {
@@ -96,6 +163,8 @@ class EcommerceAdminController extends Controller
 
         if ($request->hasFile('logo')) {
             $layout['logo_path'] = $request->file('logo')->store('storefront-layouts', 'public');
+        } elseif ($request->boolean('remove_logo')) {
+            $layout['logo_path'] = null;
         }
 
         if ($request->hasFile('hero_image')) {
@@ -108,16 +177,17 @@ class EcommerceAdminController extends Controller
             })->all();
         }
 
-        if ($request->hasFile('custom_pages')) {
-            $customPagesFiles = $request->file('custom_pages');
+        // Handle custom_pages hero_image files
+        $customPagesFiles = $request->file('custom_pages', []);
+        if (is_array($customPagesFiles)) {
             foreach ($customPagesFiles as $index => $pageFiles) {
-                if (isset($pageFiles['hero_image'])) {
+                if (is_array($pageFiles) && isset($pageFiles['hero_image']) && $pageFiles['hero_image'] instanceof \Illuminate\Http\UploadedFile) {
                     $layout['custom_pages'][$index]['hero_image'] = $pageFiles['hero_image']->store('storefront-layouts', 'public');
                 }
             }
         }
 
-        $layoutRecord = StorefrontLayout::where('client_id', $company->id)->first();
+        $layoutRecord = StorefrontLayout::withoutGlobalScope('ecommerce-client')->where('client_id', $company->id)->first();
         if ($layoutRecord) {
             $layoutRecord->update(['draft_layout' => $layout]);
         } else {
@@ -229,6 +299,8 @@ class EcommerceAdminController extends Controller
 
                 if ($request->hasFile('logo')) {
                     $layout['logo_path'] = $request->file('logo')->store('storefront-layouts', 'public');
+                } elseif ($request->boolean('remove_logo')) {
+                    $layout['logo_path'] = null;
                 }
 
                 if ($request->hasFile('hero_image')) {
@@ -241,10 +313,11 @@ class EcommerceAdminController extends Controller
                     })->all();
                 }
 
-                if ($request->hasFile('custom_pages')) {
-                    $customPagesFiles = $request->file('custom_pages');
+                // Handle custom_pages hero_image files
+                $customPagesFiles = $request->file('custom_pages', []);
+                if (is_array($customPagesFiles)) {
                     foreach ($customPagesFiles as $index => $pageFiles) {
-                        if (isset($pageFiles['hero_image'])) {
+                        if (is_array($pageFiles) && isset($pageFiles['hero_image']) && $pageFiles['hero_image'] instanceof \Illuminate\Http\UploadedFile) {
                             $layout['custom_pages'][$index]['hero_image'] = $pageFiles['hero_image']->store('storefront-layouts', 'public');
                         }
                     }
@@ -253,7 +326,7 @@ class EcommerceAdminController extends Controller
                 $layout = $record?->draft_layout ?: $current;
             }
 
-            $layoutRecord = StorefrontLayout::where('client_id', $company->id)->first();
+            $layoutRecord = StorefrontLayout::withoutGlobalScope('ecommerce-client')->where('client_id', $company->id)->first();
             if ($layoutRecord) {
                 $layoutRecord->update([
                     'draft_layout' => $layout,
@@ -279,6 +352,67 @@ class EcommerceAdminController extends Controller
             }
             return redirect()->route('ecommerce.admin.layout.edit', ['context' => $request->query('context', 'home')])->withErrors(['layout' => $e->getMessage()]);
         }
+    }
+
+    // ============================================================
+    // CUSTOMER NOTIFICATIONS MANAGEMENT
+    // ============================================================
+
+    /**
+     * List all customer-facing notifications.
+     */
+    public function customerNotifications()
+    {
+        $company = $this->company();
+        $notifications = CustomerNotification::forClient($company->id)
+            ->orderByDesc('created_at')
+            ->paginate(25);
+
+        return view('ecommerce::admin.customer-notifications', compact('notifications'));
+    }
+
+    /**
+     * Store a new customer notification (broadcast to all customers).
+     */
+    public function customerNotificationsStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'body' => 'nullable|string|max:5000',
+            'link' => 'nullable|string|max:500',
+            'type' => 'nullable|string|max:60',
+            'icon' => 'nullable|string|max:60',
+            'icon_color' => 'nullable|string|max:20',
+        ]);
+
+        $company = $this->company();
+
+        CustomerNotification::create([
+            'client_id' => $company->id,
+            'user_id' => null, // broadcast to all
+            'type' => $validated['type'] ?? 'general',
+            'title' => $validated['title'],
+            'body' => $validated['body'] ?? null,
+            'link' => $validated['link'] ?? null,
+            'icon' => $validated['icon'] ?? 'ph-megaphone',
+            'icon_color' => $validated['icon_color'] ?? 'blue',
+            'is_read' => false,
+        ]);
+
+        return redirect()->route('ecommerce.admin.customer-notifications')
+            ->with('success', 'Notification sent to all customers.');
+    }
+
+    /**
+     * Delete a customer notification.
+     */
+    public function customerNotificationsDelete(int $id): RedirectResponse
+    {
+        $company = $this->company();
+        $notif = CustomerNotification::forClient($company->id)->findOrFail($id);
+        $notif->delete();
+
+        return back()->with('success', 'Notification deleted.');
     }
 
     public function logout(Request $request): RedirectResponse
@@ -437,10 +571,6 @@ class EcommerceAdminController extends Controller
             'footer_column_3_title' => ['nullable', 'string', 'max:50'],
             'footer_shop_links' => ['nullable', 'array', 'max:10'],
             'footer_shop_links.*.label' => ['nullable', 'string', 'max:60'],
-            'footer_shop_links.*.url' => ['nullable', 'string', 'max:255'],
-            'footer_company_links' => ['nullable', 'array', 'max:10'],
-            'footer_company_links.*.label' => ['nullable', 'string', 'max:60'],
-            'footer_company_links.*.url' => ['nullable', 'string', 'max:255'],
             'support_pages' => ['nullable', 'array'],
             'support_pages.contact' => ['nullable', 'array'],
             'support_pages.contact.title' => ['nullable', 'string', 'max:160'],
@@ -605,19 +735,16 @@ class EcommerceAdminController extends Controller
                 'column_2_title' => $validated['footer_column_2_title'] ?? $current['footer']['column_2_title'] ?? 'Support',
                 'column_3_title' => $validated['footer_column_3_title'] ?? $current['footer']['column_3_title'] ?? 'Company',
                 'shop_links' => array_values(array_filter($validated['footer_shop_links'] ?? $current['footer']['shop_links'] ?? [
-                    ['label' => 'Pre-built PCs', 'url' => '/prebuilt-pcs'],
-                    ['label' => 'PC Configurator', 'url' => '/pc-configurator'],
                     ['label' => 'Collections', 'url' => '/collections'],
-                    ['label' => 'PC Forge', 'url' => '/build-pc'],
-                    ['label' => 'Explore Forge Store', 'url' => '/forge-store'],
+                    ['label' => 'Category 1', 'url' => '/categories/category1'],
+                    ['label' => 'Category 2', 'url' => '/categories/category2'],
+                    ['label' => 'Category 3', 'url' => '/categories/category3'],
                 ], fn($l) => !empty(trim($l['label'] ?? '')))),
-                'company_links' => array_values(array_filter($validated['footer_company_links'] ?? $current['footer']['company_links'] ?? [
-                    ['label' => 'About Us', 'url' => '#'],
-                    ['label' => 'Careers', 'url' => '#'],
-                    ['label' => 'Press Kit', 'url' => '#'],
-                    ['label' => 'Affiliates', 'url' => '#'],
-                    ['label' => 'Contact', 'url' => '/contact'],
-                ], fn($l) => !empty(trim($l['label'] ?? '')))),
+                'company_links' => [
+                    ['label' => 'About Us', 'url' => '/about'],
+                    ['label' => 'Careers', 'url' => '/careers'],
+                    ['label' => 'Affiliates', 'url' => '/affiliates'],
+                ],
             ],
         ];
     }

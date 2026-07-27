@@ -21,12 +21,12 @@
 
 @section('page-content')
 <div class="max-w-4xl mx-auto">
-    <div class="text-center mb-16">
+    <div data-preview-section="wrapper-support-heading-returns" class="text-center mb-16">
         <h1 class="text-5xl sm:text-6xl font-black text-white uppercase tracking-tight leading-none mb-6" data-sp-field="returns-title">{{ $pageTitle }}</h1>
         <p class="text-gray-400 text-lg max-w-2xl mx-auto" data-sp-field="returns-subtitle">{{ $pageSubtitle }}</p>
     </div>
 
-    <div class="liquid-glass bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/5 p-8 sm:p-12 mb-6 relative overflow-hidden">
+    <div data-preview-section="wrapper-support-warranty" class="liquid-glass bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/5 p-8 sm:p-12 mb-6 relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none"></div>
         <div class="relative z-10">
             <div class="flex items-center gap-4 mb-8">
@@ -42,7 +42,7 @@
         </div>
     </div>
 
-    <div class="liquid-glass bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/5 p-8 sm:p-12 mb-6">
+    <div data-preview-section="wrapper-support-policy" class="liquid-glass bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/5 p-8 sm:p-12 mb-6">
         <div class="flex items-center gap-4 mb-8">
             <div class="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center">
                 <i class="ph ph-arrow-arc-left text-3xl text-primary"></i>
@@ -68,7 +68,7 @@
         </div>
     </div>
 
-    <div class="liquid-glass bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/5 p-8 sm:p-12">
+    <div data-preview-section="wrapper-support-process" class="liquid-glass bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/5 p-8 sm:p-12">
         <div class="flex items-center gap-4 mb-8">
             <div class="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center">
                 <i class="ph ph-clipboard-text text-3xl text-primary"></i>
@@ -77,7 +77,6 @@
                 <h2 class="text-white text-2xl font-black uppercase tracking-wide">{{ $processTitle }}</h2>
                 <p class="text-gray-400 text-sm">{{ $processSub }}</p>
             </div>
-        </div>
 
         <div class="space-y-4">
             @foreach($steps as $si => $step)

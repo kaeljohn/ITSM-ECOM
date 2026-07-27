@@ -4,6 +4,7 @@ namespace Modules\Ecommerce\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Modules\Ecommerce\Models\Cart;
+use Modules\Ecommerce\Models\CustomerNotification;
 use Modules\Ecommerce\Models\Order;
 use App\Services\ErpIntegrationService;
 use Illuminate\Support\Facades\Auth;
@@ -159,7 +160,24 @@ class CheckoutController extends Controller
             //    avoiding cross-connection transaction aborts like PostgreSQL 25P02.
             app(ErpIntegrationService::class)->propagateEcommerceOrder($clientId, $order, $order->items);
 
-            // 3. Clear Cart only after every required ERP record has been created.
+            // 3. Create a notification for the customer
+            try {
+                CustomerNotification::create([
+                    'client_id' => $clientId,
+                    'user_id' => $user->id,
+                    'type' => 'order_status',
+                    'title' => 'Order Received',
+                    'body' => 'Your order ' . $order->tracking_number . ' has been received and is being processed.',
+                    'link' => route('ecommerce.account.orders.show', ['store' => $request->route('store') ?? 'store', 'id' => $order->id]),
+                    'icon' => 'ph-package',
+                    'icon_color' => 'green',
+                    'is_read' => false,
+                ]);
+            } catch (\Throwable $e) {
+                \Log::warning('Failed to create order notification: ' . $e->getMessage());
+            }
+
+            // 4. Clear Cart only after every required ERP record has been created.
             $cart->items()->delete();
         } catch (\RuntimeException $exception) {
             return response()->json(['success' => false, 'message' => $exception->getMessage()], 422);

@@ -14,12 +14,12 @@
 
 @section('page-content')
 <div class="max-w-4xl mx-auto">
-    <div class="text-center mb-16">
+    <div data-preview-section="wrapper-support-heading-contact" class="text-center mb-16">
         <h1 class="text-5xl sm:text-6xl font-black text-white uppercase tracking-tight leading-none mb-6" data-sp-field="contact-title">{{ $pageTitle }}</h1>
         <p class="text-gray-400 text-lg max-w-2xl mx-auto" data-sp-field="contact-subtitle">{{ $pageSubtitle }}</p>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-16">
+    <div data-preview-section="wrapper-support-contact-cards" class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-16">
         @foreach($contactCards as $ci => $card)
         <div class="liquid-glass bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/5 p-8 text-center hover:border-primary/50 transition-all duration-300">
             <div class="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center mx-auto mb-5">
@@ -34,6 +34,7 @@
         @endforeach
     </div>
 
+    <div data-preview-section="wrapper-support-faq-items">
     @if(count($faqItems) > 0)
     <div class="text-center mb-12">
         <h2 class="text-3xl sm:text-4xl font-black text-white uppercase tracking-tight leading-none mb-4" data-sp-field="contact-faq_title">{{ $faqTitle }}</h2>
@@ -55,6 +56,7 @@
         @endforeach
     </div>
     @endif
+    </div>
 
     <div class="liquid-glass bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/5 p-8 sm:p-12 relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none"></div>

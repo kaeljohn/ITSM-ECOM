@@ -161,7 +161,7 @@
                 <div class="bg-gradient-to-b from-white/5 to-transparent border border-white/10 rounded-2xl p-4 relative overflow-hidden group hover:border-primary/50 transition-all duration-500 hover:shadow-glow-lg flex flex-col h-full">
                     <div class="relative rounded-xl overflow-hidden aspect-[4/3] mb-5 bg-black/40">
                         @if($listing->image_url)
-                            <img src="{{ asset('storage/' . $listing->image_url) }}" alt="{{ $listing->name }}" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100">
+                            <img src="{{ asset('storage/' . $listing->image_url) }}" alt="{{ $listing->name }}" loading="lazy" class="lazy-img w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100">
                         @else
                             <div class="w-full h-full flex items-center justify-center">
                                 <i class="ph ph-package text-5xl text-gray-600"></i>

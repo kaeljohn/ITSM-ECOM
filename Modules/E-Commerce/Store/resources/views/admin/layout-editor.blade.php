@@ -313,16 +313,6 @@
         margin-top: -16px;
     }
 
-    /* Context Menu Styles */
-    .editor-context-menu { position: fixed; z-index: 10000; width: 170px; background: #ffffff; border: 1px solid #e1e3e5; border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05); padding: 4px; font-size: 13px; color: #202223; animation: ctxFadeIn 0.12s ease-out; }
-    @keyframes ctxFadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-    .editor-context-menu .menu-header { padding: 6px 10px; font-size: 11px; font-weight: 600; color: #6d7175; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid #f0f0f0; margin-bottom: 4px; }
-    .editor-context-menu .ctx-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: none; background: transparent; border-radius: 4px; font-size: 13px; font-weight: 500; color: #202223; cursor: pointer; text-align: left; transition: background 0.1s ease; }
-    .editor-context-menu .ctx-item:hover { background: #f4f6f8; }
-    .editor-context-menu .ctx-item.danger { color: #d8000c; }
-    .editor-context-menu .ctx-item.danger:hover { background: #fdf2f2; }
-    .is-hidden-tree-item { opacity: 0.45; text-decoration: line-through; }
-
     /* User dropdown open state (editor topbar) */
     [data-user-menu][data-open="true"] [data-user-menu-dropdown] {
         visibility: visible !important;
@@ -1085,9 +1075,7 @@
                 <div class="sub-item" onclick="openRightPanel('wrapper-footer', 'panel-footer-shop-links'); highlightSub(this);">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg> Shop Links
                 </div>
-                <div class="sub-item" onclick="openRightPanel('wrapper-footer', 'panel-footer-company-links'); highlightSub(this);">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Company Links
-                </div>
+
                 <div class="sub-item" onclick="openRightPanel('wrapper-footer', 'panel-footer-social'); highlightSub(this);">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg> Social Links & Copyright
                 </div>
@@ -1217,29 +1205,6 @@
                     </label>
                 </div>
 
-                <label>Store Logo
-                    <input type="file" name="logo" accept="image/*" class="live-input" style="margin-top: 4px;">
-                </label>
-                @php
-                    $brandName = old('brand_name', $layout['brand_name'] ?? '');
-                    $logoUrl = !empty($layout['logo_path']) ? (str_starts_with($layout['logo_path'], 'Modules/') ? Vite::asset($layout['logo_path']) : asset('storage/'.$layout['logo_path'])) : null;
-                @endphp
-                <div class="logo-preview-card" style="margin-top: 12px; border: 1px solid #e1e3e5; border-radius: 8px; overflow: hidden; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
-                    <div class="logo-preview-inner" style="background: #0f172a; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 72px;">
-                        <div class="logo-preview-row" style="display: flex; align-items: center; gap: 12px;">
-                            @if($logoUrl)
-                                <img src="{{ $logoUrl }}" alt="Logo preview" style="max-height: 36px; object-fit: contain;" class="logo-preview-img">
-                            @else
-                                <div class="logo-preview-img logo-preview-placeholder" style="width: 32px; height: 32px; background: rgba(255,255,255,0.12); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 14px; font-weight: 700;">{{ strtoupper(substr($brandName ?: 'Store', 0, 2)) }}</div>
-                            @endif
-                            <span class="logo-preview-name" style="color: #fff; font-size: 15px; font-weight: 700; letter-spacing: -0.3px;">{{ $brandName ?: 'Your Store Name' }}</span>
-                        </div>
-                    </div>
-                    <div style="padding: 8px 12px; background: #f8f9fb; border-top: 1px solid #e1e3e5; font-size: 11px; color: #6d7175; display: flex; align-items: center; gap: 6px;">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        Navbar preview — logo + store name
-                    </div>
-                </div>
                 <label style="margin-top: 16px;">Store Name
                     <input name="brand_name" value="{{ old('brand_name', $layout['brand_name'] ?? '') }}" class="live-input">
                 </label>
@@ -1251,9 +1216,17 @@
                 <button type="button" onclick="closeRightPanel()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div class="section-content">
-                <label>Store Logo
-                    <input type="file" name="logo" accept="image/*" class="live-input" style="margin-top: 4px;">
-                </label>
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 13px; color: #202223; font-weight: 500;">Store Logo</span>
+                    @if(!empty($layout['logo_path']))
+                    <label class="remove-logo-label" style="font-size: 11px; font-weight: 500; color: #d8000c; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                        <input type="checkbox" name="remove_logo" value="1" style="width: auto; margin: 0;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        Remove Logo
+                    </label>
+                    @endif
+                </div>
+                <input type="file" name="logo" accept="image/*" class="live-input" style="margin-top: 4px;">
                 @php
                     $brandNameH = old('brand_name', $layout['brand_name'] ?? '');
                     $logoUrlH = !empty($layout['logo_path']) ? (str_starts_with($layout['logo_path'], 'Modules/') ? Vite::asset($layout['logo_path']) : asset('storage/'.$layout['logo_path'])) : null;
@@ -1264,7 +1237,7 @@
                             @if($logoUrlH)
                                 <img src="{{ $logoUrlH }}" alt="Logo preview" style="max-height: 36px; object-fit: contain;" class="logo-preview-img">
                             @else
-                                <div class="logo-preview-img logo-preview-placeholder" style="width: 32px; height: 32px; background: rgba(255,255,255,0.12); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); font-size: 14px; font-weight: 700;">{{ strtoupper(substr($brandNameH ?: 'Store', 0, 2)) }}</div>
+                                <div class="logo-preview-img logo-preview-placeholder" style="width: auto; height: 32px; padding: 0 10px; background: rgba(255,255,255,0.08); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.35); font-size: 10px; font-weight: 600; letter-spacing: 0.5px;">{{ strtoupper($storefrontCompany?->company_name ?? $brandNameH ?: 'STORE') }} LOGO</div>
                             @endif
                             <span class="logo-preview-name" style="color: #fff; font-size: 15px; font-weight: 700; letter-spacing: -0.3px;">{{ $brandNameH ?: 'Your Store Name' }}</span>
                         </div>
@@ -1752,56 +1725,17 @@
                 <button type="button" onclick="closeRightPanel()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div class="section-content">
-                <p style="font-size: 13px; color: #5c5f62; margin-bottom: 16px;">Customize links displayed under the Shop column in the footer.</p>
+                <p style="font-size: 13px; color: #5c5f62; margin-bottom: 16px;">Customize link labels under the Shop column. URLs are fixed: Collections → /collections, Category 1 → /categories/category1, etc.</p>
                 @php
-                    $sLinks = $footer['shop_links'] ?? [
-                        ['label' => 'Pre-built PCs', 'url' => '/prebuilt-pcs'],
-                        ['label' => 'PC Configurator', 'url' => '/pc-configurator'],
-                        ['label' => 'Collections', 'url' => '/collections'],
-                        ['label' => 'PC Forge', 'url' => '/build-pc'],
-                        ['label' => 'Explore Forge Store', 'url' => '/forge-store'],
-                    ];
-                    while(count($sLinks) < 5) $sLinks[] = ['label' => '', 'url' => ''];
+                    $sLabels = collect($footer['shop_links'] ?? [])->pluck('label')->values()->all();
+                    $defaultLabels = ['Collections', 'Category 1', 'Category 2', 'Category 3'];
+                    while(count($sLabels) < 4) $sLabels[] = '';
                 @endphp
-                @foreach($sLinks as $idx => $sLink)
+                @foreach($defaultLabels as $idx => $defaultLabel)
                 <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
-                    <div style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 6px;">Link #{{ $idx + 1 }}</div>
+                    <div style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 6px;">Link #{{ $idx + 1 }} — <code style="font-size: 11px; color: #64748b;">{{ ['/collections', '/categories/category1', '/categories/category2', '/categories/category3'][$idx] }}</code></div>
                     <label style="margin-top:0;">Label
-                        <input name="footer_shop_links[{{ $idx }}][label]" value="{{ old("footer_shop_links.{$idx}.label", $sLink['label'] ?? '') }}" placeholder="e.g. Pre-built PCs" class="live-input">
-                    </label>
-                    <label style="margin-top: 8px;">URL
-                        <input name="footer_shop_links[{{ $idx }}][url]" value="{{ old("footer_shop_links.{$idx}.url", $sLink['url'] ?? '') }}" placeholder="e.g. /prebuilt-pcs" class="live-input">
-                    </label>
-                </div>
-                @endforeach
-            </div>
-        </div>
-
-        <div class="right-panel-content" id="panel-footer-company-links">
-            <div class="panel-header">
-                Company Column Links
-                <button type="button" onclick="closeRightPanel()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-            </div>
-            <div class="section-content">
-                <p style="font-size: 13px; color: #5c5f62; margin-bottom: 16px;">Customize links displayed under the Company column in the footer.</p>
-                @php
-                    $cLinks = $footer['company_links'] ?? [
-                        ['label' => 'About Us', 'url' => '#'],
-                        ['label' => 'Careers', 'url' => '#'],
-                        ['label' => 'Press Kit', 'url' => '#'],
-                        ['label' => 'Affiliates', 'url' => '#'],
-                        ['label' => 'Contact', 'url' => '/contact'],
-                    ];
-                    while(count($cLinks) < 5) $cLinks[] = ['label' => '', 'url' => ''];
-                @endphp
-                @foreach($cLinks as $idx => $cLink)
-                <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
-                    <div style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 6px;">Link #{{ $idx + 1 }}</div>
-                    <label style="margin-top:0;">Label
-                        <input name="footer_company_links[{{ $idx }}][label]" value="{{ old("footer_company_links.{$idx}.label", $cLink['label'] ?? '') }}" placeholder="e.g. About Us" class="live-input">
-                    </label>
-                    <label style="margin-top: 8px;">URL
-                        <input name="footer_company_links[{{ $idx }}][url]" value="{{ old("footer_company_links.{$idx}.url", $cLink['url'] ?? '') }}" placeholder="e.g. /contact or #" class="live-input">
+                        <input name="footer_shop_links[{{ $idx }}][label]" value="{{ old("footer_shop_links.{$idx}.label", $sLabels[$idx] ?? $defaultLabel) }}" placeholder="{{ $defaultLabel }}" class="live-input">
                     </label>
                 </div>
                 @endforeach
@@ -2461,6 +2395,9 @@
         document.getElementById('right-sidebar').classList.add('open');
         document.getElementById('preview-container').classList.add('panel-open');
         updateIframeScale();
+
+        // Highlight the corresponding element in the preview iframe
+        highlightPreview(wrapperId, panelId);
     }
 
     function closeRightPanel() {
@@ -2468,6 +2405,22 @@
         document.getElementById('right-sidebar').classList.remove('open');
         document.getElementById('preview-container').classList.remove('panel-open');
         updateIframeScale();
+
+        // Clear preview highlight when closing the panel
+        try {
+            const previewFrame = document.getElementById('preview-frame');
+            const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+            if (doc) {
+                const prev = doc.querySelector('[data-preview-highlighted]');
+                if (prev) {
+                    prev.removeAttribute('data-preview-highlighted');
+                    prev.style.outline = '';
+                    prev.style.outlineOffset = '';
+                    prev.style.boxShadow = '';
+                    prev.style.borderRadius = '';
+                }
+            }
+        } catch(e) {}
     }
 
     function updateIframeScale() {
@@ -2494,6 +2447,73 @@
             inner.style.transform = 'scale(1)';
             inner.style.flexGrow = '1';
             inner.style.flexShrink = '1';
+        }
+    }
+
+    /**
+     * Highlight the corresponding section/block in the preview iframe
+     * when a sidebar nav-item or sub-item is clicked.
+     */
+    function highlightPreview(wrapperId, panelId) {
+        try {
+            const previewFrame = document.getElementById('preview-frame');
+            const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+            if (!doc) return;
+
+            // Clear previous highlight
+            const prev = doc.querySelector('[data-preview-highlighted]');
+            if (prev) {
+                prev.removeAttribute('data-preview-highlighted');
+                prev.style.outline = '';
+                prev.style.outlineOffset = '';
+                prev.style.boxShadow = '';
+                prev.style.borderRadius = '';
+            }
+
+            // Determine which section element to highlight.
+            // Support/company pages use the full wrapperId as data-preview-section (e.g. "wrapper-support-heading-contact").
+            // Template sections use the stripped ID (e.g. "wrapper-hero" -> "hero").
+            let sectionEl = doc.querySelector('[data-preview-section="' + wrapperId + '"]');
+            let sectionId = wrapperId;
+            if (!sectionEl) {
+                sectionId = wrapperId.replace('wrapper-', '');
+                sectionEl = doc.querySelector('[data-preview-section="' + sectionId + '"]');
+            }
+            if (!sectionEl) return;
+
+            // Determine if clicking the section header (main panel) or a sub-item (block)
+            const isSectionMain = panelId === 'panel-' + sectionId + '-main';
+
+            if (isSectionMain) {
+                // Highlight the entire section
+                sectionEl.setAttribute('data-preview-highlighted', 'true');
+                sectionEl.style.outline = '3px solid #0060df';
+                sectionEl.style.outlineOffset = '2px';
+                sectionEl.style.boxShadow = '0 0 0 4px rgba(0, 96, 223, 0.25)';
+                sectionEl.style.borderRadius = '4px';
+                sectionEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                // Try to find a specific block with this panel ID
+                const blockEl = doc.querySelector('[data-preview-block="' + panelId + '"]');
+                if (blockEl) {
+                    blockEl.setAttribute('data-preview-highlighted', 'true');
+                    blockEl.style.outline = '3px solid #0060df';
+                    blockEl.style.outlineOffset = '2px';
+                    blockEl.style.boxShadow = '0 0 0 4px rgba(0, 96, 223, 0.25)';
+                    blockEl.style.borderRadius = '4px';
+                    blockEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    // Fallback: highlight the entire section
+                    sectionEl.setAttribute('data-preview-highlighted', 'true');
+                    sectionEl.style.outline = '3px solid #0060df';
+                    sectionEl.style.outlineOffset = '2px';
+                    sectionEl.style.boxShadow = '0 0 0 4px rgba(0, 96, 223, 0.25)';
+                    sectionEl.style.borderRadius = '4px';
+                    sectionEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        } catch(e) {
+            // Silently ignore cross-origin or DOM errors
         }
     }
 
@@ -2592,26 +2612,14 @@
                     });
                 };
 
-                // Sync Section Visibility
+                // Sync Section Visibility (based on enabled checkbox)
                 const sectionIds = ['hero', 'tiers', 'prebuilts', 'categories', 'cta'];
                 sectionIds.forEach(id => {
-                    const wrapper = document.getElementById(`wrapper-${id}`);
                     const chk = formData.get(`${id}_enabled`);
-                    const isEnabled = (formData.has(`${id}_enabled`) || chk === 'on' || chk === '1') && (!wrapper || !wrapper.classList.contains('is-hidden-tree-item'));
+                    const isEnabled = (formData.has(`${id}_enabled`) || chk === 'on' || chk === '1');
                     const secEl = doc.querySelector(`[data-preview-section="${id}"]`);
                     if (secEl) {
                         secEl.style.display = isEnabled ? '' : 'none';
-                    }
-                });
-
-                // Sync Block Visibility
-                doc.querySelectorAll('[data-preview-block]').forEach(blockEl => {
-                    const blockId = blockEl.getAttribute('data-preview-block');
-                    const subItem = document.querySelector(`.sub-item[onclick*="${blockId}"]`) || document.getElementById(`nav-${blockId}`);
-                    if (subItem && (subItem.classList.contains('is-hidden-tree-item') || subItem.getAttribute('data-hidden') === 'true')) {
-                        blockEl.style.display = 'none';
-                    } else if (blockEl.style.display === 'none' && (!subItem || (!subItem.classList.contains('is-hidden-tree-item') && subItem.getAttribute('data-hidden') !== 'true'))) {
-                        blockEl.style.display = '';
                     }
                 });
 
@@ -2816,6 +2824,16 @@
                     }
                 }
 
+                // Sync Collection/Category hero background image from file input preview
+                const heroBgImg = doc.querySelector('[data-preview-block="panel-collections-hero-bg"] img');
+                if (heroBgImg) {
+                    // Find the file input that has a data-preview-url
+                    const heroFileInput = document.querySelector('input[type="file"][name^="custom_pages"][name$="[hero_image]"]');
+                    if (heroFileInput && heroFileInput.getAttribute('data-preview-url')) {
+                        heroBgImg.src = heroFileInput.getAttribute('data-preview-url');
+                    }
+                }
+
                 // Sync Collection Buttons
                 const colButtonsUl = doc.getElementById('collections-buttons-list');
                 if (colButtonsUl) {
@@ -2998,33 +3016,21 @@
                     }
                 });
 
-                // Sync Shop Links
+                // Sync Shop Links (URLs are hardcoded, only labels are editable)
                 const shopUl = doc.getElementById('footer-shop-links-list');
                 if (shopUl) {
+                    const shopUrls = ['/collections', '/categories/category1', '/categories/category2', '/categories/category3'];
                     let shopHtml = '';
-                    for (let i = 0; i < 10; i++) {
+                    for (let i = 0; i < 4; i++) {
                         const lbl = formData.get(`footer_shop_links[${i}][label]`);
-                        const url = formData.get(`footer_shop_links[${i}][url]`);
                         if (lbl) {
-                            shopHtml += `<li><a href="${url || '#'}" class="hover:text-white transition-colors">${lbl}</a></li>`;
+                            shopHtml += `<li><a href="${shopUrls[i]}" class="hover:text-white transition-colors">${lbl}</a></li>`;
                         }
                     }
                     if (shopHtml) shopUl.innerHTML = shopHtml;
                 }
 
-                // Sync Company Links
-                const companyUl = doc.getElementById('footer-company-links-list');
-                if (companyUl) {
-                    let companyHtml = '';
-                    for (let i = 0; i < 10; i++) {
-                        const lbl = formData.get(`footer_company_links[${i}][label]`);
-                        const url = formData.get(`footer_company_links[${i}][url]`);
-                        if (lbl) {
-                            companyHtml += `<li><a href="${url || '#'}" class="hover:text-white transition-colors">${lbl}</a></li>`;
-                        }
-                    }
-                    if (companyHtml) companyUl.innerHTML = companyHtml;
-                }
+                // Company links are now hardcoded in the footer component (About Us, Careers, Affiliates)
 
                 // Dynamic Theme Color Sync
                 const primaryColor = formData.get('primary_color');
@@ -3165,7 +3171,7 @@
             const formData = new FormData(form);
             try {
                 const response = await fetch(form.action, {
-                    method: 'POST',
+                    method: 'PUT',
                     body: formData,
                     headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
                 });
@@ -3226,6 +3232,25 @@
                     updateStaticPreview();
                 });
             }
+        });
+
+        // Collections/Category hero background image — use FileReader to show a temporary preview
+        document.querySelectorAll('input[type="file"][name^="custom_pages"][name$="[hero_image]"]').forEach(function(field) {
+            field.addEventListener('change', function(e) {
+                var file = e.target.files && e.target.files[0];
+                if (file) {
+                    var reader = new FileReader();
+                    var input = this;
+                    reader.onload = function(ev) {
+                        input.setAttribute('data-preview-url', ev.target.result);
+                        updateStaticPreview();
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    this.removeAttribute('data-preview-url');
+                    updateStaticPreview();
+                }
+            });
         });
 
         // Logo file input — use FileReader to show a temporary preview
@@ -3330,293 +3355,31 @@
                 document.querySelectorAll('.logo-preview-card .logo-preview-name').forEach(function(span) {
                     span.textContent = val;
                 });
-                // Also update the placeholder initials in any card (both Blade and dynamic)
+                // Also update the placeholder text in any card ("[STORE] LOGO" format)
                 document.querySelectorAll('.logo-preview-card .logo-preview-placeholder').forEach(function(el) {
-                    var initials = val.trim().substring(0, 2).toUpperCase();
-                    el.textContent = initials;
+                    var storeName = (val || 'STORE').trim().toUpperCase();
+                    el.textContent = storeName + ' LOGO';
                 });
                 updateStaticPreview();
             });
         });
 
-        // Helper functions for Context Menu & Rename/Visibility/Remove
-        function getItemLabel(el) {
-            if (!el) return '';
-            const navLeft = el.classList.contains('nav-item-left') ? el : el.querySelector('.nav-item-left');
-            const target = navLeft || el;
-
-            const titleSpan = target.querySelector('.section-title-text, span:not(.chevron-toggle)');
-            if (titleSpan && titleSpan.textContent.trim()) {
-                return titleSpan.textContent.trim();
-            }
-
-            const clone = target.cloneNode(true);
-            const subItems = clone.querySelector('.sub-items');
-            if (subItems) subItems.remove();
-            clone.querySelectorAll('svg, .chevron-toggle').forEach(s => s.remove());
-            return clone.textContent.trim();
-        }
-
-        function setItemLabel(el, newText) {
-            if (!el) return;
-            const navLeft = el.classList.contains('nav-item-left') ? el : el.querySelector('.nav-item-left');
-            const target = navLeft || el;
-
-            let titleSpan = target.querySelector('.section-title-text');
-            if (titleSpan) {
-                titleSpan.textContent = newText;
-                return;
-            }
-
-            titleSpan = target.querySelector('span:not(.chevron-toggle)');
-            if (titleSpan) {
-                titleSpan.textContent = newText;
-                return;
-            }
-
-            let textNodeFound = false;
-            for (let node of target.childNodes) {
-                if (node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 0) {
-                    node.textContent = ' ' + newText;
-                    textNodeFound = true;
-                    break;
-                }
-            }
-            if (!textNodeFound) {
-                const newSpan = document.createElement('span');
-                newSpan.className = 'section-title-text';
-                newSpan.textContent = newText;
-                target.appendChild(newSpan);
-            }
-        }
-
-        function isItemCardBlock(el, blockId) {
-            if (el) {
-                if (el.classList.contains('tiers-block-nav') || el.classList.contains('prebuilts-block-nav')) return true;
-                if (el.id && (el.id.startsWith('nav-tiers-block-') || el.id.startsWith('nav-prebuilts-block-'))) return true;
-            }
-            if (blockId) {
-                if (blockId.startsWith('panel-tiers-block-') || blockId.startsWith('panel-prebuilts-block-')) return true;
-            }
-            return false;
-        }
-
-        function getItemCardSectionAndIndex(el, blockId) {
-            let section = '', index = -1;
-            const idStr = (el ? el.id : '') || blockId || '';
-            if (idStr.includes('tiers')) section = 'tiers';
-            else if (idStr.includes('prebuilts')) section = 'prebuilts';
-
-            const match = idStr.match(/\d+/);
-            if (match) index = parseInt(match[0], 10);
-            return { section, index };
-        }
-
-        function showContextMenu(x, y, targetData) {
-            const menu = document.getElementById('editor-context-menu');
-            if (!menu) return;
-
-            menu.targetData = targetData;
-
-            const headerEl = document.getElementById('ctx-menu-header');
-            if (headerEl) {
-                headerEl.textContent = targetData.title || (targetData.isSection ? 'Section' : 'Block');
-            }
-
-            const visibleText = document.getElementById('ctx-visible-text');
-            const eyeIcon = menu.querySelector('.icon-eye');
-            const eyeOffIcon = menu.querySelector('.icon-eye-off');
-            const isVisible = targetData.isVisible;
-
-            if (visibleText) {
-                visibleText.textContent = isVisible ? 'Hide' : 'Show';
-            }
-            if (eyeIcon && eyeOffIcon) {
-                eyeIcon.style.display = isVisible ? 'none' : 'block';
-                eyeOffIcon.style.display = isVisible ? 'block' : 'none';
-            }
-
-            const removeBtn = document.getElementById('ctx-opt-remove');
-            if (removeBtn) {
-                removeBtn.style.display = targetData.isItemCard ? 'flex' : 'none';
-            }
-
-            menu.style.display = 'block';
-            const menuWidth = menu.offsetWidth || 170;
-            const menuHeight = menu.offsetHeight || 130;
-
-            let posX = x;
-            let posY = y;
-
-            if (posX + menuWidth > window.innerWidth - 10) posX = window.innerWidth - menuWidth - 10;
-            if (posY + menuHeight > window.innerHeight - 10) posY = window.innerHeight - menuHeight - 10;
-
-            menu.style.left = posX + 'px';
-            menu.style.top = posY + 'px';
-        }
-
-        function hideContextMenu() {
-            const menu = document.getElementById('editor-context-menu');
-            if (menu) {
-                menu.style.display = 'none';
-                menu.targetData = null;
-            }
-        }
-
-        // Close menu on left click outside
-        document.addEventListener('mousedown', (e) => {
-            if (e.button === 0 && !e.target.closest('#editor-context-menu')) {
-                hideContextMenu();
-            }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                hideContextMenu();
-            }
-        });
-
-        window.addEventListener('scroll', hideContextMenu, true);
-
-        // Sidebar Contextmenu Listener (Delegated to Document)
-        document.addEventListener('contextmenu', (e) => {
-            const subItem = e.target.closest('.sub-item');
-            const navTrigger = e.target.closest('.nav-item');
-            const sectionWrapper = e.target.closest('.nav-item-wrapper');
-
-            if (subItem) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                const title = getItemLabel(subItem);
-                const blockId = subItem.getAttribute('onclick')?.match(/'(panel-[^']+)'/)?.[1] || subItem.id || '';
-                const isItemCard = isItemCardBlock(subItem, blockId);
-                const itemCardInfo = isItemCard ? getItemCardSectionAndIndex(subItem, blockId) : null;
-                const visible = !subItem.classList.contains('is-hidden-tree-item') && subItem.getAttribute('data-hidden') !== 'true';
-
-                showContextMenu(e.clientX, e.clientY, {
-                    isSection: false,
-                    isItemCard: isItemCard,
-                    itemCardInfo: itemCardInfo,
-                    element: subItem,
-                    blockId: blockId,
-                    title: title,
-                    isVisible: visible
-                });
-            } else if (navTrigger || sectionWrapper) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                const wrapper = sectionWrapper || (navTrigger ? navTrigger.closest('.nav-item-wrapper') : null);
-                const triggerEl = navTrigger || (wrapper ? wrapper.querySelector('.nav-item') : null);
-                const sectionId = wrapper ? (wrapper.getAttribute('data-section-id') || wrapper.id.replace('wrapper-', '')) : '';
-                const title = getItemLabel(triggerEl || wrapper);
-                
-                let visible = true;
-                if (wrapper && wrapper.classList.contains('is-hidden-tree-item')) {
-                    visible = false;
-                } else if (sectionId) {
-                    const chk = document.querySelector(`input[name="${sectionId}_enabled"]`);
-                    if (chk) visible = chk.checked;
-                }
-
-                showContextMenu(e.clientX, e.clientY, {
-                    isSection: true,
-                    isItemCard: false,
-                    element: triggerEl || wrapper,
-                    wrapper: wrapper,
-                    sectionId: sectionId,
-                    title: title,
-                    isVisible: visible
-                });
-            }
-        });
-
-        // Context Menu Action Listeners
-        const optRename = document.getElementById('ctx-opt-rename');
-        if (optRename) {
-            optRename.addEventListener('click', () => {
-                const menu = document.getElementById('editor-context-menu');
-                const target = menu ? menu.targetData : null;
-                hideContextMenu();
-                if (!target) return;
-
-                const oldName = target.title || '';
-                const newName = prompt(`Rename ${target.isSection ? 'Section' : 'Block'}:`, oldName);
-
-                if (newName !== null && newName.trim() !== '' && newName.trim() !== oldName) {
-                    const cleanName = newName.trim();
-                    if (target.element) {
-                        setItemLabel(target.element, cleanName);
+        // Remove Logo checkbox — clear file input and reset preview when checked
+        document.querySelectorAll('input[name="remove_logo"]').forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                if (this.checked) {
+                    var container = this.closest('.section-content');
+                    if (container) {
+                        var fileInput = container.querySelector('input[type="file"][name="logo"]');
+                        if (fileInput) fileInput.value = '';
                     }
-                    if (target.blockId) {
-                        const panelHeaderSpan = document.querySelector(`#${target.blockId} .panel-header span`);
-                        if (panelHeaderSpan) {
-                            panelHeaderSpan.textContent = cleanName;
-                        }
-                    }
-                    showToast(`Renamed to "${cleanName}"`, 'success');
+                    delete window._editorLogoDataUrl;
+                    updateStaticPreview();
                 }
             });
-        }
+        });
 
-        const optVisible = document.getElementById('ctx-opt-visible');
-        if (optVisible) {
-            optVisible.addEventListener('click', () => {
-                const menu = document.getElementById('editor-context-menu');
-                const target = menu ? menu.targetData : null;
-                hideContextMenu();
-                if (!target) return;
-
-                const willBeVisible = !target.isVisible;
-
-                if (target.isSection) {
-                    const secId = target.sectionId;
-                    const chk = document.querySelector(`input[name="${secId}_enabled"]`);
-                    if (chk) {
-                        chk.checked = willBeVisible;
-                        chk.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                    if (target.wrapper) {
-                        if (willBeVisible) target.wrapper.classList.remove('is-hidden-tree-item');
-                        else target.wrapper.classList.add('is-hidden-tree-item');
-                    }
-                } else {
-                    if (target.element) {
-                        if (willBeVisible) {
-                            target.element.classList.remove('is-hidden-tree-item');
-                            target.element.setAttribute('data-hidden', 'false');
-                        } else {
-                            target.element.classList.add('is-hidden-tree-item');
-                            target.element.setAttribute('data-hidden', 'true');
-                        }
-                    }
-                }
-
-                if (typeof window.updateStaticPreview === 'function') {
-                    window.updateStaticPreview();
-                }
-
-                showToast(`${target.title} is now ${willBeVisible ? 'visible' : 'hidden'}`);
-            });
-        }
-
-        const optRemove = document.getElementById('ctx-opt-remove');
-        if (optRemove) {
-            optRemove.addEventListener('click', () => {
-                const menu = document.getElementById('editor-context-menu');
-                const target = menu ? menu.targetData : null;
-                hideContextMenu();
-                if (!target || !target.isItemCard) return;
-
-                const info = target.itemCardInfo;
-                if (info && info.section && info.index >= 0) {
-                    removeBlock(info.section, info.index);
-                }
-            });
-        }
-
-        // Listen for section selection & contextmenu from iframe
+        // Listen for section selection & block selection from iframe (click to edit)
         window.addEventListener('message', (event) => {
             if (!event.data) return;
 
@@ -3655,65 +3418,11 @@
                         subItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
                 } else {
-                    // Fallback to main panel if the block doesn't have a specific panel (e.g. dynamic item cards)
+                    // Fallback to main panel if the block doesn't have a specific panel
                     const mainPanelId = 'panel-' + sectionId + '-main';
                     if (document.getElementById(mainPanelId)) {
                         openRightPanel(wrapperId, mainPanelId);
                     }
-                }
-            } else if (event.data.action === 'contextmenu_section') {
-                const sectionId = event.data.section;
-                const wrapper = document.getElementById('wrapper-' + sectionId);
-                const iframe = document.getElementById('preview-frame');
-                if (iframe) {
-                    const rect = iframe.getBoundingClientRect();
-                    const scaleX = rect.width / (iframe.offsetWidth || rect.width);
-                    const scaleY = rect.height / (iframe.offsetHeight || rect.height);
-                    const posX = rect.left + (event.data.clientX * scaleX);
-                    const posY = rect.top + (event.data.clientY * scaleY);
-
-                    const triggerEl = wrapper ? (wrapper.querySelector('.nav-item') || wrapper) : null;
-                    const title = triggerEl ? getItemLabel(triggerEl) : (sectionId ? sectionId.toUpperCase() : 'Section');
-                    const chk = document.querySelector(`input[name="${sectionId}_enabled"]`);
-                    const visible = chk ? chk.checked : (wrapper ? !wrapper.classList.contains('is-hidden-tree-item') : true);
-
-                    showContextMenu(posX, posY, {
-                        isSection: true,
-                        isItemCard: false,
-                        element: triggerEl,
-                        wrapper: wrapper,
-                        sectionId: sectionId,
-                        title: title,
-                        isVisible: visible
-                    });
-                }
-            } else if (event.data.action === 'contextmenu_block') {
-                const sectionId = event.data.section;
-                const blockId = event.data.block;
-                const iframe = document.getElementById('preview-frame');
-                const subItem = document.querySelector(`.sub-item[onclick*="${blockId}"]`) || document.getElementById(`nav-${blockId}`);
-
-                if (iframe) {
-                    const rect = iframe.getBoundingClientRect();
-                    const scaleX = rect.width / (iframe.offsetWidth || rect.width);
-                    const scaleY = rect.height / (iframe.offsetHeight || rect.height);
-                    const posX = rect.left + (event.data.clientX * scaleX);
-                    const posY = rect.top + (event.data.clientY * scaleY);
-
-                    const isItemCard = isItemCardBlock(subItem, blockId);
-                    const itemCardInfo = isItemCard ? getItemCardSectionAndIndex(subItem, blockId) : null;
-                    const title = subItem ? getItemLabel(subItem) : (blockId ? blockId.replace('panel-', '').replace(/-/g, ' ') : 'Item Block');
-                    const visible = subItem ? (!subItem.classList.contains('is-hidden-tree-item') && subItem.getAttribute('data-hidden') !== 'true') : true;
-
-                    showContextMenu(posX, posY, {
-                        isSection: false,
-                        isItemCard: isItemCard,
-                        itemCardInfo: itemCardInfo,
-                        element: subItem,
-                        blockId: blockId,
-                        title: title,
-                        isVisible: visible
-                    });
                 }
             }
         });
@@ -3869,7 +3578,7 @@
                 const formData = new FormData(form);
 
                 fetch(form.action, {
-                    method: 'PUT',
+                    method: 'POST',
                     body: formData,
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
@@ -4106,21 +3815,4 @@
     <div class="loading-sub">Please wait while we save your draft...</div>
 </div>
 
-<!-- Editor Context Menu -->
-<div id="editor-context-menu" class="editor-context-menu" style="display: none;">
-    <div class="menu-header" id="ctx-menu-header">Item Name</div>
-    <button type="button" class="ctx-item" id="ctx-opt-rename">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-        <span>Rename</span>
-    </button>
-    <button type="button" class="ctx-item" id="ctx-opt-visible">
-        <svg class="icon-eye" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        <svg class="icon-eye-off" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-        <span id="ctx-visible-text">Visible</span>
-    </button>
-    <button type="button" class="ctx-item danger" id="ctx-opt-remove" style="display: none;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-        <span>Remove</span>
-    </button>
-</div>
 @endsection

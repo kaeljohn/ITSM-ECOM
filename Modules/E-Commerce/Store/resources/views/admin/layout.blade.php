@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Nexora E-commerce')</title>
     <link rel="icon" type="image/x-icon" href="{{ asset('images/nexora-icon.ico') }}">
     <!-- Load Phosphor Icons for the sidebar -->
@@ -131,20 +132,20 @@
                 <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.crm.dashboard') ? 'active' : '' }}" href="{{ route('ecommerce.admin.crm.dashboard') }}">
                     <i class="ph ph-gauge"></i> Dashboard
                 </a>
+                <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.customer-notifications*') ? 'active' : '' }}" href="{{ route('ecommerce.admin.customer-notifications') }}">
+                    <i class="ph ph-megaphone"></i> Notifications
+                </a>
                 <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.crm.customers*') ? 'active' : '' }}" href="{{ route('ecommerce.admin.crm.customers') }}">
                     <i class="ph ph-users"></i> Customers
                 </a>
-                <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.crm.abandoned-carts') ? 'active' : '' }}" href="{{ route('ecommerce.admin.crm.abandoned-carts') }}">
-                    <i class="ph ph-shopping-cart"></i> Abandoned Carts
+                <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.crm.segments') ? 'active' : '' }}" href="{{ route('ecommerce.admin.crm.segments') }}">
+                    <i class="ph ph-funnel"></i> Segments &amp; RFM
                 </a>
-                <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.crm.leads*') ? 'active' : '' }}" href="{{ route('ecommerce.admin.crm.leads.pipeline') }}">
-                    <i class="ph ph-funnel"></i> Sales Pipeline
+                <a class="sidebar-link" href="#" onclick="toggleChatWidget(); return false;">
+                    <i class="ph ph-chats"></i> Live Chat
                 </a>
-                <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.crm.reviews') ? 'active' : '' }}" href="{{ route('ecommerce.admin.crm.reviews') }}">
-                    <i class="ph ph-star"></i> Reviews
-                </a>
-                <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.crm.coupons*') ? 'active' : '' }}" href="{{ route('ecommerce.admin.crm.coupons') }}">
-                    <i class="ph ph-tag"></i> Coupons
+                <a class="sidebar-link {{ request()->routeIs('ecommerce.admin.crm.tickets') ? 'active' : '' }}" href="{{ route('ecommerce.admin.crm.tickets') }}">
+                    <i class="ph ph-ticket"></i> Tickets
                 </a>
             </nav>
 

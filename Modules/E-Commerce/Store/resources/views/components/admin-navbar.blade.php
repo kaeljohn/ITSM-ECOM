@@ -458,10 +458,11 @@
             </a>
         @endif
 
-        <div class="navbar-btn navbar-icon-inert" title="No notifications yet">
-            <i class="ph ph-bell"></i>
-            <span class="badge-dot"></span>
-        </div>
+        <!-- Live Chat -->
+        @include('ecommerce::components.admin-chat-widget')
+
+        <!-- Notifications Bell -->
+        @include('ecommerce::components.admin-notification-bell')
 
         <!-- User Menu -->
         <div class="user-menu-wrap" data-user-menu>

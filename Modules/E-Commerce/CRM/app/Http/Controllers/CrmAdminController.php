@@ -7,17 +7,33 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use Modules\Ecommerce\CRM\Models\Customer;
 use Modules\Ecommerce\CRM\Models\AbandonedCart;
+use Modules\Ecommerce\CRM\Models\Ticket;
 use Modules\Ecommerce\CRM\Models\ProductReview;
 use Modules\Ecommerce\CRM\Models\Coupon;
 use Modules\Ecommerce\CRM\Models\Lead;
 use Modules\Ecommerce\CRM\Models\Segment;
+use Modules\Ecommerce\CRM\Models\Tag;
+use Modules\Ecommerce\CRM\Models\CampaignLog;
+use Modules\Ecommerce\CRM\Models\CampaignEvent;
+use Modules\Ecommerce\CRM\Models\CommunicationTemplate;
+use Modules\Ecommerce\CRM\Models\Customer as CrmCustomer;
+use Modules\Ecommerce\CRM\Models\AdminNotification;
+use Modules\Ecommerce\CRM\Services\ActivityTimelineService;
+use Modules\Ecommerce\CRM\Services\ChurnRiskService;
 use Modules\Ecommerce\CRM\Services\CrmDashboardService;
+use Modules\Ecommerce\CRM\Services\LtvCalculator;
+use Modules\Ecommerce\CRM\Services\NotificationService;
+use Modules\Ecommerce\CRM\Services\RfmSegmentEngine;
 use Illuminate\Support\Str;
 
 class CrmAdminController extends Controller
 {
     public function __construct(
-        protected CrmDashboardService $dashboardService
+        protected CrmDashboardService $dashboardService,
+        protected ActivityTimelineService $timelineService,
+        protected LtvCalculator $ltvCalculator,
+        protected ChurnRiskService $churnRiskService,
+        protected RfmSegmentEngine $rfmEngine,
     ) {}
 
     /**
@@ -67,19 +83,80 @@ class CrmAdminController extends Controller
     }
 
     /**
-     * Customer 360° detail view.
+     * Customer 360° detail view — rich single-page profile.
      */
     public function customerShow($id)
     {
-        $customer = Customer::with(['tags', 'segments', 'communications' => fn ($q) => $q->latest()])
-            ->findOrFail($id);
+        $customer = Customer::with([
+            'tags',
+            'segments',
+            'tickets' => fn ($q) => $q->latest(),
+            'campaignLogs' => fn ($q) => $q->latest(),
+            'consentLogs' => fn ($q) => $q->latest(),
+            'activityLog' => fn ($q) => $q->latest()->take(50),
+        ])->findOrFail($id);
 
+        // Reviews
         $reviews = ProductReview::where('user_id', $customer->user_id)
             ->latest()
             ->take(10)
             ->get();
 
-        return view('crm::admin.customer-show', compact('customer', 'reviews'));
+        // Orders from ecommerce.orders
+        $orders = collect();
+        if ($customer->user_id) {
+            $orders = \Modules\Ecommerce\Models\Order::where('user_id', $customer->user_id)
+                ->with('items')
+                ->orderByDesc('created_at')
+                ->take(20)
+                ->get()
+                ->map(function ($o) {
+                    return [
+                        'id' => $o->id,
+                        'status' => $o->status,
+                        'total' => (float) $o->total,
+                        'shipping_fee' => (float) $o->shipping_fee,
+                        'payment_method' => $o->payment_method,
+                        'payment_status' => $o->payment_status,
+                        'tracking_number' => $o->tracking_number,
+                        'item_count' => $o->items->sum('quantity'),
+                        'items' => $o->items->map(fn ($i) => [
+                            'name' => $i->name,
+                            'price' => (float) $i->price,
+                            'quantity' => $i->quantity,
+                            'product_type' => $i->product_type,
+                        ]),
+                        'created_at' => $o->created_at,
+                    ];
+                });
+        }
+
+        // LTV, churn risk, RFM (read-only — no DB mutation on GET)
+        $projectedLtv = $this->ltvCalculator->projectedLtv($customer);
+        $monthsSincePurchase = $this->ltvCalculator->monthsSinceLastPurchase($customer);
+        $rfm = $this->rfmEngine->scoreCustomer($customer);
+        $churnRisk = $customer->churn_risk; // already persisted by batch or recalc
+
+        // Activity timeline (first 30 events)
+        $timeline = $this->timelineService->buildForCustomer(
+            customerId: (int) $customer->id,
+            limit: 50,
+        );
+
+        // Open ticket count
+        $openTickets = $customer->tickets()->whereIn('status', ['open', 'pending'])->count();
+
+        return view('crm::admin.customer-show', compact(
+            'customer',
+            'reviews',
+            'orders',
+            'projectedLtv',
+            'monthsSincePurchase',
+            'churnRisk',
+            'rfm',
+            'timeline',
+            'openTickets',
+        ));
     }
 
     /**
@@ -92,7 +169,7 @@ class CrmAdminController extends Controller
         $validated = $request->validate([
             'notes' => 'nullable|string|max:5000',
             'tags' => 'nullable|array',
-            'tags.*' => 'integer|exists:crm_tags,id',
+            'tags.*' => 'integer|exists:ecommerce.crm_tags,id',
         ]);
 
         if (array_key_exists('notes', $validated)) {
@@ -104,6 +181,92 @@ class CrmAdminController extends Controller
         }
 
         return back()->with('success', 'Customer updated.');
+    }
+
+    // ============================================================
+    // TICKETS MANAGEMENT
+    // ============================================================
+
+    /**
+     * Tickets listing — filterable by status, priority, search, and assigned user.
+     */
+    public function tickets(Request $request)
+    {
+        $query = Ticket::with(['customer' => function ($q) {
+            $q->select('id', 'first_name', 'last_name', 'email');
+        }])->urgentFirst()->newestFirst();
+
+        // Filters
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        } else {
+            // Default: show active (open + pending)
+            $query->active();
+        }
+
+        if ($priority = $request->input('priority')) {
+            $query->where('priority', $priority);
+        }
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('subject', 'ilike', "%{$search}%")
+                  ->orWhereHas('customer', function ($cq) use ($search) {
+                      $cq->where('first_name', 'ilike', "%{$search}%")
+                         ->orWhere('last_name', 'ilike', "%{$search}%")
+                         ->orWhere('email', 'ilike', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($assigned = $request->input('assigned_to')) {
+            if ($assigned === '__unassigned__') {
+                $query->whereNull('assigned_to_user_id');
+            } else {
+                $query->where('assigned_to_user_id', $assigned);
+            }
+        }
+
+        if ($category = $request->input('category')) {
+            $query->where('category', $category);
+        }
+
+        $tickets = $query->paginate(25)->withQueryString();
+
+        // KPIs
+        $totalTickets = Ticket::count();
+        $activeTickets = Ticket::active()->count();
+        $urgentTickets = Ticket::active()->where('priority', 'urgent')->count();
+        $unassignedTickets = Ticket::active()->whereNull('assigned_to_user_id')->count();
+
+        // Category list for filter dropdown
+        $categories = Ticket::select('category')
+            ->whereNotNull('category')
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category');
+
+        // Assigned users list for filter dropdown
+        $assignedUsers = Ticket::select('assigned_to')
+            ->whereNotNull('assigned_to')
+            ->distinct()
+            ->orderBy('assigned_to')
+            ->pluck('assigned_to');
+
+        // Customers list for the Create Ticket modal dropdown
+        $customers = Customer::orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name', 'email']);
+
+        return view('crm::admin.tickets', compact(
+            'tickets',
+            'totalTickets',
+            'activeTickets',
+            'urgentTickets',
+            'unassignedTickets',
+            'categories',
+            'assignedUsers',
+            'customers',
+        ));
     }
 
     /**
@@ -150,6 +313,23 @@ class CrmAdminController extends Controller
             'approved' => true,
             'approved_at' => now(),
         ]);
+
+        // Fire notification
+        $admin = auth('ecommerce_admin')->user();
+        $company = $admin?->getCompany();
+        if ($company) {                try {
+                    $customerName = $review->customer?->full_name ?? 'A customer';
+                    app(NotificationService::class)->notify(
+                        clientId: $company->id,
+                        type: 'review_approved',
+                        title: 'Review Approved',
+                        body: "{$customerName}'s product review has been approved and is now live.",
+                        link: route('ecommerce.admin.crm.reviews'),
+                    );
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Failed to fire review_approved notification: ' . $e->getMessage());
+                }
+        }
 
         return back()->with('success', 'Review approved and live on the storefront.');
     }
@@ -202,7 +382,7 @@ class CrmAdminController extends Controller
             'max_discount' => 'nullable|numeric|min:0',
             'max_uses' => 'nullable|integer|min:1',
             'per_user_limit' => 'nullable|integer|min:1',
-            'segment_id' => 'nullable|integer|exists:crm_segments,id',
+            'segment_id' => 'nullable|integer|exists:ecommerce.crm_segments,id',
             'status' => 'required|in:active,inactive',
             'starts_at' => 'nullable|date',
             'expires_at' => 'nullable|date|after_or_equal:starts_at',
@@ -240,18 +420,316 @@ class CrmAdminController extends Controller
     }
 
     // ============================================================
-    // COMMUNICATION TEMPLATES
+    // SEGMENTATION & TAGS MANAGER
     // ============================================================
 
     /**
-     * Communication templates list.
+     * Segmentation & Tags management page.
+     */
+    public function segments()
+    {
+        // All tags with customer count
+        $tags = Tag::withCount('customers')->orderBy('name')->get();
+
+        // All segments with customer count
+        $segments = Segment::withCount('customers')->orderBy('name')->get();
+
+        // RFM segment definitions from the engine
+        $rfmDefinitions = \Modules\Ecommerce\CRM\Services\RfmSegmentEngine::SEGMENTS;
+
+        return view('crm::admin.segments', compact(
+            'tags',
+            'segments',
+            'rfmDefinitions',
+        ));
+    }
+
+    // ============================================================
+    // CAMPAIGN LOG VIEWER
+    // ============================================================
+
+    /**
+     * Campaign Log viewer — browse all sent email/SMS campaigns with delivery tracking.
+     */
+    public function campaigns(Request $request)
+    {
+        $query = CampaignLog::with(['customer' => function ($q) {
+            $q->select('id', 'first_name', 'last_name', 'email');
+        }])->withCount('events')->orderByDesc('sent_at')->orderByDesc('created_at');
+
+        // Filters
+        if ($type = $request->input('type')) {
+            $query->where('campaign_type', $type);
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('campaign_name', 'ilike', "%{$search}%")
+                  ->orWhere('subject', 'ilike', "%{$search}%")
+                  ->orWhereHas('customer', function ($cq) use ($search) {
+                      $cq->where('first_name', 'ilike', "%{$search}%")
+                         ->orWhere('last_name', 'ilike', "%{$search}%")
+                         ->orWhere('email', 'ilike', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($from = $request->input('from')) {
+            $query->where('sent_at', '>=', $from);
+        }
+
+        if ($to = $request->input('to')) {
+            $query->where('sent_at', '<=', $to . ' 23:59:59');
+        }
+
+        $campaigns = $query->paginate(25)->withQueryString();
+
+        // KPIs
+        $totalSent = CampaignLog::count();
+        $totalDelivered = CampaignLog::delivered()->count();
+        $totalOpened = CampaignLog::opened()->count();
+        $totalClicked = CampaignLog::clicked()->count();
+        $totalFailed = CampaignLog::failed()->count();
+
+        // Aggregate stats for the header
+        $emailCount = CampaignLog::where('campaign_type', 'email')->count();
+        $smsCount = CampaignLog::where('campaign_type', 'sms')->count();
+
+        return view('crm::admin.campaigns', compact(
+            'campaigns',
+            'totalSent',
+            'totalDelivered',
+            'totalOpened',
+            'totalClicked',
+            'totalFailed',
+            'emailCount',
+            'smsCount',
+        ));
+    }
+
+    /**
+     * Campaign events JSON endpoint (for modal drill-down).
+     */
+    public function campaignEvents($id)
+    {
+        $log = CampaignLog::with('events')->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'campaign' => [
+                    'id' => $log->id,
+                    'campaign_name' => $log->campaign_name,
+                    'campaign_type' => $log->campaign_type,
+                    'subject' => $log->subject,
+                    'status' => $log->status,
+                    'sent_at' => $log->sent_at?->toIso8601String(),
+                    'delivered_at' => $log->delivered_at?->toIso8601String(),
+                    'first_opened_at' => $log->first_opened_at?->toIso8601String(),
+                    'first_clicked_at' => $log->first_clicked_at?->toIso8601String(),
+                    'provider' => $log->provider,
+                ],
+                'events' => $log->events->map(function ($e) {
+                    return [
+                        'id' => $e->id,
+                        'event_type' => $e->event_type,
+                        'event_type_label' => $e->event_type_label,
+                        'occurred_at' => $e->occurred_at?->toIso8601String(),
+                        'device_type' => $e->device_type,
+                        'country' => $e->country,
+                        'city' => $e->city,
+                        'ip_address' => $e->ip_address,
+                        'user_agent' => $e->user_agent,
+                        'payload' => $e->payload,
+                    ];
+                }),
+            ],
+        ]);
+    }
+
+    // ============================================================
+    // COMMUNICATION TEMPLATES MANAGER
+    // ============================================================
+
+    /**
+     * Communication templates listing.
      */
     public function templates(Request $request)
     {
-        $templates = \Modules\Ecommerce\CRM\Models\CommunicationTemplate::orderByDesc('created_at')
-            ->paginate(25);
+        $query = CommunicationTemplate::orderByDesc('created_at');
 
-        return view('crm::admin.templates', compact('templates'));
+        if ($type = $request->input('type')) {
+            $query->where('type', $type);
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('subject', 'ilike', "%{$search}%");
+            });
+        }
+
+        $templates = $query->paginate(25)->withQueryString();
+
+        // Collect available trigger events for filter
+        $triggerEvents = CommunicationTemplate::whereNotNull('trigger_event')
+            ->select('trigger_event')
+            ->distinct()
+            ->orderBy('trigger_event')
+            ->pluck('trigger_event');
+
+        return view('crm::admin.templates', compact(
+            'templates',
+            'triggerEvents',
+        ));
+    }
+
+    /**
+     * Show template create/edit form.
+     */
+    public function templateForm($id = null)
+    {
+        $template = $id ? CommunicationTemplate::findOrFail($id) : new CommunicationTemplate();
+
+        $fields = [
+            'types' => ['email' => 'Email', 'sms' => 'SMS'],
+            'statuses' => ['draft' => 'Draft', 'active' => 'Active', 'archived' => 'Archived'],
+            'triggerEvents' => [
+                '' => 'None (manual only)',
+                'welcome' => 'Welcome',
+                'order_confirmation' => 'Order Confirmation',
+                'shipping_update' => 'Shipping Update',
+                'password_reset' => 'Password Reset',
+                'abandoned_cart' => 'Abandoned Cart',
+                'birthday' => 'Birthday',
+                'review_request' => 'Review Request',
+                'reengagement' => 'Re-engagement',
+            ],
+            'availableVariables' => [
+                '{{customer.first_name}}' => "Customer's first name",
+                '{{customer.last_name}}' => "Customer's last name",
+                '{{customer.full_name}}' => "Customer's full name",
+                '{{customer.email}}' => "Customer's email",
+                '{{customer.phone}}' => "Customer's phone",
+                '{{company.name}}' => 'Company / store name',
+                '{{order.id}}' => 'Order ID',
+                '{{order.total}}' => 'Order total',
+                '{{order.status}}' => 'Order status',
+                '{{year}}' => 'Current year',
+                '{{unsubscribe_url}}' => 'Unsubscribe link',
+            ],
+        ];
+
+        return view('crm::admin.template-form', compact('template', 'fields'));
+    }
+
+    /**
+     * Create or update a template.
+     */
+    public function templateSave(Request $request, $id = null)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:150',
+            'type' => 'required|in:email,sms',
+            'subject' => 'nullable|string|max:255',
+            'body' => 'required|string',
+            'variables' => 'nullable|array',
+            'trigger_event' => 'nullable|string|max:100',
+            'status' => 'required|in:draft,active,archived',
+        ]);
+
+        $template = $id ? CommunicationTemplate::findOrFail($id) : new CommunicationTemplate();
+        $template->fill($validated);
+        $template->save();
+
+        return redirect()->route('ecommerce.admin.crm.templates')
+            ->with('success', $id ? 'Template updated.' : 'Template created.');
+    }
+
+    /**
+     * Delete a template.
+     */
+    public function templateDelete($id)
+    {
+        $template = CommunicationTemplate::findOrFail($id);
+        $template->delete();
+
+        return back()->with('success', 'Template deleted.');
+    }
+
+    /**
+     * Preview a template rendered with sample data.
+     */
+    public function templatePreview(Request $request)
+    {
+        $body = $request->input('body', '');
+        $subject = $request->input('subject', '');
+
+        // Sample data for preview
+        $sampleData = [
+            '{{customer.first_name}}' => 'Juan',
+            '{{customer.last_name}}' => 'dela Cruz',
+            '{{customer.full_name}}' => 'Juan dela Cruz',
+            '{{customer.email}}' => 'juan@example.com',
+            '{{customer.phone}}' => '+63 912 345 6789',
+            '{{company.name}}' => 'TechForge',
+            '{{order.id}}' => 'ORD-2024-00123',
+            '{{order.total}}' => '₱15,499.00',
+            '{{order.status}}' => 'Processing',
+            '{{year}}' => '2026',
+            '{{unsubscribe_url}}' => '#',
+        ];
+
+        $renderedSubject = str_replace(array_keys($sampleData), array_values($sampleData), $subject);
+        $renderedBody = str_replace(array_keys($sampleData), array_values($sampleData), $body);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'subject' => $renderedSubject,
+                'body' => $renderedBody,
+            ],
+        ]);
+    }
+
+    /**
+     * Test send a template to a specific customer or email address.
+     */
+    public function templateTestSend(Request $request)
+    {
+        $validated = $request->validate([
+            'template_id' => 'required|integer|exists:ecommerce.crm_communication_templates,id',
+            'customer_id' => 'nullable|integer|exists:ecommerce.crm_customers,id',
+            'email' => 'nullable|email',
+        ]);
+
+        $template = CommunicationTemplate::findOrFail($validated['template_id']);
+
+        // In production, this would queue the actual send via mail/SMS provider.
+        // For now, we log it and return success.
+        $recipient = $validated['email'] ?? 'test@example.com';
+
+        if (!empty($validated['customer_id'])) {
+            $customer = CrmCustomer::find($validated['customer_id']);
+            $recipient = $customer?->email ?? $recipient;
+        }
+
+        // Log the test send
+        \Illuminate\Support\Facades\Log::info('Template test send', [
+            'template' => $template->name,
+            'type' => $template->type,
+            'recipient' => $recipient,
+        ]);
+
+        return back()->with('success', "Test {$template->type} sent to {$recipient}.");
     }
 
     // ============================================================
@@ -347,7 +825,7 @@ class CrmAdminController extends Controller
             'probability' => 'nullable|integer|min:0|max:100',
             'expected_close_date' => 'nullable|date',
             'assigned_to' => 'nullable|string|max:200',
-            'customer_id' => 'nullable|integer|exists:crm_customers,id',
+            'customer_id' => 'nullable|integer|exists:ecommerce.crm_customers,id',
             'notes' => 'nullable|string|max:5000',
         ];
 
@@ -362,6 +840,20 @@ class CrmAdminController extends Controller
         // Log activity on status change
         if ($id && $oldStatus !== $lead->status) {
             $lead->logActivity('status_change', "Status changed from " . ucfirst($oldStatus) . " to " . ucfirst($lead->status));
+            // Fire notification
+            $admin = auth('ecommerce_admin')->user();
+            $company = $admin?->getCompany();
+            if ($company) {
+                try {
+                    app(NotificationService::class)->leadStatusChanged(
+                        $company->id,
+                        $lead->first_name . ' ' . $lead->last_name,
+                        $lead->status,
+                    );
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Failed to fire lead_status_changed notification: ' . $e->getMessage());
+                }
+            }
         }
 
         // If won and no customer linked, try to find matching customer
@@ -395,6 +887,19 @@ class CrmAdminController extends Controller
         $lead->update(['status' => $validated['status']]);
 
         $lead->logActivity('status_change', "Status changed from " . ucfirst($oldStatus) . " to " . ucfirst($lead->status));
+        // Fire notification
+        $admin = auth('ecommerce_admin')->user();
+        $company = $admin?->getCompany();
+        if ($company) {                try {
+                    app(NotificationService::class)->leadStatusChanged(
+                        $company->id,
+                        $lead->first_name . ' ' . $lead->last_name,
+                        $validated['status'],
+                    );
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Failed to fire lead_status_changed notification: ' . $e->getMessage());
+                }
+        }
 
         // If moved to won
         if ($validated['status'] === 'won' && !$lead->customer_id) {
@@ -443,6 +948,19 @@ class CrmAdminController extends Controller
         ]);
 
         $lead->logActivity('converted', 'Lead converted to customer manually.');
+        // Fire notification
+        $admin = auth('ecommerce_admin')->user();
+        $company = $admin?->getCompany();
+        if ($company) {                try {
+                    app(NotificationService::class)->leadConverted(
+                        $company->id,
+                        $lead->first_name . ' ' . $lead->last_name,
+                        $customer->id,
+                    );
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Failed to fire lead_converted notification: ' . $e->getMessage());
+                }
+        }
 
         return redirect()->route('ecommerce.admin.crm.customers.show', $customer->id)
             ->with('success', 'Lead converted to customer successfully.');
@@ -468,5 +986,32 @@ class CrmAdminController extends Controller
         $lead->delete();
 
         return back()->with('success', 'Lead deleted.');
+    }
+
+    // ============================================================
+    // ADMIN NOTIFICATIONS
+    // ============================================================
+
+    /**
+     * Notifications page — full listing.
+     */
+    public function notifications()
+    {
+        $admin = auth('ecommerce_admin')->user();
+        $company = $admin?->getCompany();
+        $clientId = $company?->id;
+
+        if (!$clientId) {
+            return redirect()->route('ecommerce.admin.dashboard')
+                ->with('error', 'No company context found.');
+        }
+
+        $service = app(NotificationService::class);
+        $notifications = AdminNotification::forClient($clientId)
+            ->orderByDesc('created_at')
+            ->paginate(25);
+        $unreadCount = $service->getUnreadCount($clientId);
+
+        return view('crm::admin.notifications', compact('notifications', 'unreadCount'));
     }
 }

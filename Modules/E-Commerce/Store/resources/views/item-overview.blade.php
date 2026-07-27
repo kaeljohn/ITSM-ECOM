@@ -155,13 +155,13 @@
             <div class="w-full lg:w-1/2 flex flex-col gap-4">
                 <!-- Main Image -->
                 <div data-tilt data-tilt-max="5" data-tilt-speed="400" data-tilt-glare="true" data-tilt-max-glare="0.2" class="liquid-glass rounded-3xl p-8 border border-white/10 aspect-square flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-black/40 to-black/80" style="transform-style: preserve-3d;">
-                    <img id="main-product-image" src="{{ $mainImg }}" alt="{{ $product->name }}" class="w-full h-full object-contain drop-shadow-2xl transition-transform duration-500" style="transform: translateZ(20px);">
+                    <img id="main-product-image" src="{{ $mainImg }}" alt="{{ $product->name }}" loading="lazy" class="lazy-img w-full h-full object-contain drop-shadow-2xl transition-transform duration-500" style="transform: translateZ(20px);">
                 </div>
                 <!-- Thumbnails -->
                 <div class="flex gap-4 overflow-x-auto hide-scrollbar pb-2">
                     @foreach($thumbnails as $idx => $thumb)
                         <div onclick="updateMainImage(this, '{{ $thumb }}')" class="thumbnail-btn cursor-pointer w-24 h-24 shrink-0 rounded-2xl p-2 border {{ $idx === 0 ? 'border-primary bg-primary/10' : 'border-white/10 bg-black/40 hover:border-white/30' }} transition-all">
-                            <img src="{{ $thumb }}" class="w-full h-full object-cover rounded-xl" alt="Thumbnail {{ $idx }}">
+                            <img src="{{ $thumb }}" loading="lazy" class="lazy-img w-full h-full object-cover rounded-xl" alt="Thumbnail {{ $idx }}">
                         </div>
                     @endforeach
                 </div>
@@ -281,7 +281,7 @@
                     @foreach($suggestedItems as $suggested)
                     <a href="{{ route('ecommerce.listings.show', ['store' => $store, 'listing' => $suggested->id]) }}" class="group liquid-glass rounded-2xl p-4 border border-white/5 hover:border-primary/50 hover:shadow-glow-lg transition-all duration-500 flex flex-col">
                         <div class="aspect-square w-full rounded-xl bg-black/40 mb-3 flex items-center justify-center p-3 border border-white/5 overflow-hidden">
-                            <img src="{{ $suggested->image_url ? asset('storage/' . $suggested->image_url) : 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?auto=format&fit=crop&w=800&q=80' }}" alt="{{ $suggested->name }}" class="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500">
+                            <img src="{{ $suggested->image_url ? asset('storage/' . $suggested->image_url) : 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?auto=format&fit=crop&w=800&q=80' }}" alt="{{ $suggested->name }}" loading="lazy" class="lazy-img max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500">
                         </div>
                         <h3 class="text-sm font-bold text-white truncate mb-1 group-hover:text-primary transition-colors">{{ $suggested->name }}</h3>
                         <div class="text-primary font-black text-sm mt-auto">₱{{ number_format($suggested->price) }}</div>
@@ -302,7 +302,7 @@
             <div class="bg-[#0f0f0f]/90 backdrop-blur-xl border-t border-white/10 px-4 py-4 flex items-center justify-between shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
                 <div class="flex items-center gap-4 max-w-7xl mx-auto w-full justify-between">
                     <div class="flex items-center gap-4">
-                        <img src="{{ $mainImg }}" class="w-12 h-12 rounded-lg object-cover hidden sm:block border border-white/10">
+                        <img src="{{ $mainImg }}" loading="lazy" class="lazy-img w-12 h-12 rounded-lg object-cover hidden sm:block border border-white/10">
                         <div>
                             <h3 class="text-white font-bold">{{ $product->name }}</h3>
                             <div class="flex items-center gap-2">

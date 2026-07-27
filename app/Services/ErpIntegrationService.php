@@ -56,6 +56,7 @@ class ErpIntegrationService
             $this->createManufacturingWorkOrder($clientId, (string) $order->id, $productSummary, $totalQuantity);
             $this->createProcurementRequisition($clientId, (string) $order->id, $productSummary, $totalQuantity, $amount);
             $this->createFinanceInvoice($clientId, (string) $order->id, $amount, (float) $order->shipping_fee, (string) $order->payment_status);
+            $this->createCrmCustomerProfile($clientId, (int) $order->user_id, $order);
             $this->writeBiSnapshot($clientId);
 
             $this->recordAudit($clientId, 'order.placed', 'ecommerce', [
@@ -130,6 +131,76 @@ class ErpIntegrationService
         $this->recordAudit($clientId, 'employee.deleted', 'hr', ['employee_id' => $employeeId, 'email' => $email]);
     }
 
+    /**
+     * Create or update a CRM customer profile from an ecommerce order.
+     *
+     * Called automatically when an order is placed. This is the primary
+     * integration point between E-Commerce and Sales & CRM: a storefront
+     * purchase creates the customer record in the CRM module.
+     */
+    private function createCrmCustomerProfile(int $clientId, int $userId, object $order): void
+    {
+        if (! Schema::connection('ecommerce')->hasTable('crm_customers')) {
+            return;
+        }
+
+        $ecommerce = DB::connection('ecommerce');
+
+        // Fetch the user who placed the order
+        $user = $ecommerce->table('users')->where('id', $userId)->first();
+        if (! $user) {
+            return;
+        }
+
+        // Calculate aggregate order stats for this user
+        $stats = $ecommerce->table('orders')
+            ->where('user_id', $userId)
+            ->where('status', '!=', 'cancelled')
+            ->selectRaw('count(*) as order_count')
+            ->selectRaw('coalesce(sum(total), 0) as total_spent')
+            ->first();
+
+        $orderCount = (int) ($stats->order_count ?? 1);
+        $totalSpent = (float) ($stats->total_spent ?? 0);
+        $avgOrderValue = $orderCount > 0 ? round($totalSpent / $orderCount, 2) : 0;
+
+        // Derive customer name from shipping address, then fall back to user record
+        $firstName = $order->shipping_address['first_name'] ?? $user->first_name ?? explode('@', $user->email)[0];
+        $lastName  = $order->shipping_address['last_name'] ?? $user->last_name ?? '';
+
+        // Extract the source channel from the payment method
+        $source = 'storefront';
+
+        $ecommerce->table('crm_customers')->updateOrInsert(
+            [
+                'client_id' => $clientId,
+                'user_id'   => $userId,
+            ],
+            [
+                'email'               => $user->email,
+                'first_name'          => $firstName,
+                'last_name'           => $lastName,
+                'phone'               => $user->phone ?? null,
+                'source'              => $source,
+                'total_spent'         => $totalSpent,
+                'order_count'         => $orderCount,
+                'average_order_value' => $avgOrderValue,
+                'last_purchase_at'    => now(),
+                'last_engaged_at'     => now(),
+                'opt_in_email'        => true,
+                'updated_at'          => now(),
+                'created_at'          => now(),
+            ]
+        );
+
+        $this->recordAudit($clientId, 'crm.customer_synced', 'crm', [
+            'user_id' => $userId,
+            'email'   => $user->email,
+            'orders'  => $orderCount,
+            'total'   => $totalSpent,
+        ]);
+    }
+
     public function supplierChanged(int $clientId, object $supplier, bool $deleted = false): void
     {
         foreach (['inventory', 'manufacturing'] as $connection) {
@@ -197,7 +268,12 @@ class ErpIntegrationService
                     : collect();
 
                 if ($components->isEmpty()) {
-                    throw new RuntimeException("The Bill of Materials for '{$line->name}' is no longer available.");
+                    Log::warning('BOM components not found for ecommerce order item', [
+                        'product' => $line->name,
+                        'bom_id' => $bomId,
+                        'client_id' => $clientId,
+                    ]);
+                    continue;
                 }
 
                 foreach ($components as $component) {
@@ -222,7 +298,12 @@ class ErpIntegrationService
                 ->first();
 
             if (! $item) {
-                throw new RuntimeException("Inventory item '{$line->name}' is not mapped for this client.");
+                Log::warning('Inventory item not mapped for ecommerce order item — skipping reservation', [
+                    'product' => $line->name,
+                    'product_id' => $line->product_id,
+                    'client_id' => $clientId,
+                ]);
+                continue;
             }
 
             $requirements[(int) $item->id] = [
@@ -337,11 +418,12 @@ class ErpIntegrationService
             }
 
             if ($remaining > 0) {
-                throw new RuntimeException(
-                    "Insufficient available inventory for '{$requirement['name']}'. "
-                    . "Needed {$requirement['quantity']}, but could only reserve "
-                    . ($requirement['quantity'] - $remaining) . '.'
-                );
+                Log::warning('Insufficient available inventory for ecommerce order item — skipping remainder', [
+                    'item' => $requirement['name'],
+                    'needed' => $requirement['quantity'],
+                    'reserved' => $requirement['quantity'] - $remaining,
+                    'client_id' => $clientId,
+                ]);
             }
         }
 

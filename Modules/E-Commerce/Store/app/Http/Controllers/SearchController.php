@@ -17,7 +17,7 @@ class SearchController extends Controller
 
         // Resolve company/store context
         $company = $request->attributes->get('ecommerce_company') ?? \App\Models\Company::first();
-        $store = $company?->ecommerce_slug ?? 'techforge';
+        $store = $company?->ecommerce_slug ?? 'store';
 
         // Resolve layout for theme colors and branding
         $isPreview = $request->boolean('preview') && auth('ecommerce_admin')->check();

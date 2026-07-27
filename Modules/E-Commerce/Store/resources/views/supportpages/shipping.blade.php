@@ -13,12 +13,12 @@
 
 @section('page-content')
 <div class="max-w-4xl mx-auto">
-    <div class="text-center mb-16">
+    <div data-preview-section="wrapper-support-heading-shipping" class="text-center mb-16">
         <h1 class="text-5xl sm:text-6xl font-black text-white uppercase tracking-tight leading-none mb-6" data-sp-field="shipping-title">{{ $pageTitle }}</h1>
         <p class="text-gray-400 text-lg max-w-2xl mx-auto" data-sp-field="shipping-subtitle">{{ $pageSubtitle }}</p>
     </div>
 
-    <div class="liquid-glass bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/5 p-8 sm:p-12 mb-6 relative overflow-hidden">
+    <div data-preview-section="wrapper-support-rates" class="liquid-glass bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/5 p-8 sm:p-12 mb-6 relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none"></div>
         <div class="relative z-10">
             <h2 class="text-white text-2xl font-black uppercase tracking-wide mb-8">Shipping Rates</h2>
@@ -36,7 +36,7 @@
         </div>
     </div>
 
-    <div class="liquid-glass bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/5 p-8 sm:p-12 mb-6">
+    <div data-preview-section="wrapper-support-processing" class="liquid-glass bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/5 p-8 sm:p-12 mb-6">
         <h2 class="text-white text-2xl font-black uppercase tracking-wide mb-6">Processing Time</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
             @foreach($processing as $pi => $proc)
@@ -48,7 +48,7 @@
         </div>
     </div>
 
-    <div class="liquid-glass bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/5 p-8 sm:p-12">
+    <div data-preview-section="wrapper-support-tracking" class="liquid-glass bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/5 p-8 sm:p-12">
         <h2 class="text-white text-2xl font-black uppercase tracking-wide mb-6">Order Tracking</h2>
         <p class="text-gray-400 text-sm leading-relaxed mb-6" data-sp-field="shipping-tracking_body">{{ $trackingBody }}</p>
         <div class="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5">

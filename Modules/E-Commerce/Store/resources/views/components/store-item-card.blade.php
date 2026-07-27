@@ -15,7 +15,7 @@
 <div {{ $attributes->merge(['class' => 'store-item-card liquid-glass rounded-2xl p-5 border border-white/10 flex flex-col group hover:border-primary/50 transition-all duration-300']) }}>
 
     <div class="aspect-square w-full rounded-xl bg-black/40 mb-4 flex items-center justify-center p-4 border border-white/5 overflow-hidden">
-        <img src="{{ $image }}" alt="{{ $name }}" class="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)]">
+        <img src="{{ $image }}" alt="{{ $name }}" loading="lazy" class="lazy-img max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)]">
     </div>
 
     <div class="flex justify-between items-start gap-3 mb-4">

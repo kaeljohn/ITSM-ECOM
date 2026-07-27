@@ -154,6 +154,81 @@
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--tw-color-primary); }
 
+        /* ── Lazy Image Blur-Up ── */
+        .lazy-img {
+            opacity: 0;
+            filter: blur(16px);
+            transform: scale(1.08);
+            transition: opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+                        filter 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+                        transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .lazy-img.loaded {
+            opacity: 1;
+            filter: blur(0);
+            transform: scale(1);
+        }
+
+        /* ── Loading Skeleton Shimmer ── */
+        .skeleton {
+            position: relative;
+            overflow: hidden;
+            background: rgba(255,255,255,0.04);
+            border-radius: 8px;
+        }
+        .skeleton::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(255,255,255,0.06) 50%,
+                transparent 100%);
+            animation: shimmer 1.8s ease-in-out infinite;
+            transform: translateX(-100%);
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .skeleton-card {
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .skeleton-card > .skeleton-img {
+            aspect-ratio: 4/3;
+            width: 100%;
+        }
+        .skeleton-card > .skeleton-body {
+            padding: 20px;
+        }
+        .skeleton-card > .skeleton-body > .skeleton-line {
+            height: 14px;
+            margin-bottom: 10px;
+            width: 70%;
+        }
+        .skeleton-card > .skeleton-body > .skeleton-line:last-child {
+            width: 40%;
+            height: 20px;
+            margin-bottom: 0;
+        }
+        .skeleton-text {
+            height: 12px;
+            margin-bottom: 8px;
+            width: 100%;
+        }
+        .skeleton-text:last-child {
+            width: 60%;
+        }
+        .skeleton-badge {
+            display: inline-block;
+            height: 16px;
+            width: 80px;
+            margin-bottom: 12px;
+        }
+
         @keyframes spinFastOnce { 0% { transform: rotate(0deg); } 100% { transform: rotate(720deg); } }
         .animate-spin-fast { animation: spinFastOnce 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
         @keyframes slideTextOut { 0% { max-width: 0; opacity: 0; padding-left: 0; } 100% { max-width: 400px; opacity: 1; padding-left: 1.5rem; } }
@@ -396,7 +471,7 @@
                                     <div class="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-primary z-20 pointer-events-none"></div>
 
                                     <!-- Main Image -->
-                                    <img id="hero-main-img" src="{{ $heroDisplayItems[0]['image'] }}" alt="{{ $heroDisplayItems[0]['name'] }}" class="w-full h-full object-cover transition-opacity duration-700 opacity-90 group-hover/card:opacity-100 mix-blend-lighten">
+                                    <img id="hero-main-img" src="{{ $heroDisplayItems[0]['image'] }}" alt="{{ $heroDisplayItems[0]['name'] }}" loading="lazy" class="lazy-img w-full h-full object-cover opacity-90 group-hover/card:opacity-100 mix-blend-lighten transition-opacity duration-700">
 
                                     <!-- Overlay (opacity-controlled) -->
                                     <div class="absolute inset-0 bg-black pointer-events-none transition-opacity duration-500" style="opacity: {{ ($section['overlay_opacity'] ?? 0) / 100 }};"></div>
@@ -425,7 +500,7 @@
                             <div class="w-full flex justify-between gap-2 sm:gap-3 z-40 overflow-x-hidden" id="hero-thumbnails-container">
                                 @foreach($heroDisplayItems as $index => $item)
                                 <button data-config-index="{{ $index }}" class="hero-thumbnail flex-1 h-14 sm:h-20 {{ $index === 0 ? 'border-2 border-primary shadow-glow-sm' : 'border border-white/20 hover:border-primary/50' }} bg-[#050505] relative overflow-hidden group cursor-pointer transition-colors rounded-lg">
-                                    <img src="{{ $item['image'] }}" alt="{{ $item['name'] }}" class="w-full h-full object-cover mix-blend-lighten {{ $index === 0 ? 'opacity-90' : 'opacity-40 group-hover:opacity-80 grayscale group-hover:grayscale-0' }} transition-opacity">
+                                    <img src="{{ $item['image'] }}" alt="{{ $item['name'] }}" loading="lazy" class="lazy-img w-full h-full object-cover mix-blend-lighten {{ $index === 0 ? 'opacity-90' : 'opacity-40 group-hover:opacity-80 grayscale group-hover:grayscale-0' }} transition-opacity">
                                     <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent p-2">
                                         <div class="text-[8px] sm:text-[10px] font-black tracking-widest uppercase text-center {{ $index === 0 ? 'text-white' : 'text-gray-400 group-hover:text-white' }}">{{ $item['label'] }}</div>
                                     </div>
@@ -557,7 +632,6 @@
                         $listing = \Modules\Ecommerce\Models\StorefrontListing::find($b['listing_id']);
                         if ($listing) {
                             $originalDesc = $listing->description;
-                            // Block-level description override
                             if (!empty($b['description'])) {
                                 $listing->description = $b['description'];
                             }
@@ -571,7 +645,6 @@
                     }
                 }
 
-                // If no blocks at all but in preview, show placeholders
                 if ($displayTiers->isEmpty() && ($preview ?? false)) {
                     $displayTiers->push((object)['name' => 'Sample Tier 1', 'image_url' => '', 'description' => 'This is a placeholder description for the tier item.', 'price' => 50000]);
                     $displayTiers->push((object)['name' => 'Sample Tier 2', 'image_url' => '', 'description' => 'This is a placeholder description for the tier item.', 'price' => 75000]);
@@ -583,6 +656,24 @@
             @endphp
             @if($displayTiers->isNotEmpty())
             <section data-preview-section="tiers" style="{{ $sectionStyle }}" class="max-w-7xl mx-auto px-6 lg:px-8 mb-32 relative z-10 pt-20 transition-all duration-300">
+                <!-- Skeleton overlay (fades out on window.load) -->
+                <div data-skeleton="tiers" class="absolute inset-0 z-20 bg-[#050505]" style="border-radius: inherit;">
+                    <div class="flex gap-6 overflow-hidden pt-20 px-6 lg:px-8">
+                        @for($s = 0; $s < 4; $s++)
+                        <div class="skeleton-card shrink-0 w-[85vw] sm:w-[calc(50%-12px)] md:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)]">
+                            <div class="skeleton skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton skeleton-badge"></div>
+                                <div class="skeleton skeleton-text"></div>
+                                <div class="skeleton skeleton-text" style="width:85%;"></div>
+                                <div class="skeleton skeleton-text" style="width:55%;"></div>
+                                <div style="height:16px;"></div>
+                                <div class="skeleton skeleton-line"></div>
+                            </div>
+                        </div>
+                        @endfor
+                    </div>
+                </div>
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-16 border-b border-white/10 pb-8">
                     <div data-preview-block="panel-tiers-heading" data-parent-section="tiers">
                         @php
@@ -611,7 +702,7 @@
                         <div data-preview-block="panel-tiers-block-{{ $index }}" data-parent-section="tiers" class="liquid-glass backdrop-blur-2xl bg-black/40 rounded-2xl border border-white/5 flex flex-col group hover:border-primary/50 hover:shadow-glow-lg transition-all duration-500 relative overflow-hidden {{ $isCarousel ? 'shrink-0 snap-start w-[85vw] sm:w-[calc(50%-12px)] md:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)]' : '' }}">
                         <!-- Image Area -->
                         <div class="relative w-full aspect-[4/3] bg-[#0a0a0a] overflow-hidden">
-                            <img src="{{ $listing->image_url ? asset('storage/'.$listing->image_url) : 'https://images.unsplash.com/photo-1547082299-de196ea013d6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80' }}" alt="{{ $listing->name }}" class="w-full h-full object-cover mix-blend-lighten opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
+                            <img src="{{ $listing->image_url ? asset('storage/'.$listing->image_url) : 'https://images.unsplash.com/photo-1547082299-de196ea013d6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80' }}" alt="{{ $listing->name }}" loading="lazy" class="lazy-img w-full h-full object-cover mix-blend-lighten opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
 
                             <!-- Number -->
                             <div class="absolute top-4 left-4 text-primary font-mono text-sm tracking-widest">/0{{ $index + 1 }}</div>
@@ -687,6 +778,22 @@
             @endphp
             @if($displayPrebuilts->isNotEmpty())
             <section data-preview-section="prebuilts" style="{{ $sectionStyle }}" class="max-w-7xl mx-auto px-6 lg:px-8 mb-32 relative z-10 pt-10 transition-all duration-300">
+                <!-- Skeleton overlay (fades out on window.load) -->
+                <div data-skeleton="prebuilts" class="absolute inset-0 z-20 bg-[#050505]" style="border-radius: inherit;">
+                    <div class="flex gap-6 overflow-hidden pt-10 px-6 lg:px-8">
+                        @for($s = 0; $s < 4; $s++)
+                        <div class="skeleton-card shrink-0 w-[85vw] sm:w-[calc(50%-12px)] md:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)]">
+                            <div class="skeleton skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton skeleton-text"></div>
+                                <div class="skeleton skeleton-text" style="width:80%;"></div>
+                                <div style="height:16px;"></div>
+                                <div class="skeleton skeleton-line"></div>
+                            </div>
+                        </div>
+                        @endfor
+                    </div>
+                </div>
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-16 border-b border-white/10 pb-8">
                     <div data-preview-block="panel-prebuilts-heading" data-parent-section="prebuilts">
                         @php
@@ -715,7 +822,7 @@
                         <div data-preview-block="panel-prebuilts-block-{{ $index }}" data-parent-section="prebuilts" class="liquid-glass backdrop-blur-2xl bg-black/40 rounded-2xl border border-white/5 flex flex-col group hover:border-primary/50 hover:shadow-glow-lg transition-all duration-500 relative overflow-hidden {{ $isCarousel ? 'shrink-0 snap-start w-[85vw] sm:w-[calc(50%-12px)] md:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)]' : '' }}">
                         <!-- Image Area -->
                         <div class="relative w-full aspect-[4/3] bg-[#0a0a0a] overflow-hidden">
-                            <img src="{{ $listing->image_url ? asset('storage/'.$listing->image_url) : 'https://images.unsplash.com/photo-1547082299-de196ea013d6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80' }}" alt="{{ $listing->name }}" class="w-full h-full object-cover mix-blend-lighten opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
+                            <img src="{{ $listing->image_url ? asset('storage/'.$listing->image_url) : 'https://images.unsplash.com/photo-1547082299-de196ea013d6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80' }}" alt="{{ $listing->name }}" loading="lazy" class="lazy-img w-full h-full object-cover mix-blend-lighten opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
                         </div>
 
                         <!-- Title Area -->
@@ -775,7 +882,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     @foreach($catBlocks as $ci => $cat)
                     <div data-cat-card="{{ $ci }}" data-preview-block="panel-categories-card-{{ $ci + 1 }}" data-parent-section="categories" class="liquid-glass backdrop-blur-2xl bg-black/40 rounded-2xl relative overflow-hidden group h-[350px] lg:h-[400px] border border-white/5 hover:border-primary/50 transition-all duration-500 hover:shadow-glow-lg flex flex-col justify-end">
-                        <img src="{{ $cat['image'] ?? $defaultCatBlocks[$ci]['image'] }}" alt="{{ $cat['title'] ?? '' }}" class="cat-card-img absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 opacity-30 mix-blend-lighten" style="mask-image: linear-gradient(to top, transparent, black 80%); -webkit-mask-image: linear-gradient(to top, transparent, black 80%);">
+                        <img src="{{ $cat['image'] ?? $defaultCatBlocks[$ci]['image'] }}" alt="{{ $cat['title'] ?? '' }}" loading="lazy" class="lazy-img cat-card-img absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 opacity-30 mix-blend-lighten" style="mask-image: linear-gradient(to top, transparent, black 80%); -webkit-mask-image: linear-gradient(to top, transparent, black 80%);">
                         <div class="relative z-10 p-8 border-t border-white/5 bg-black/60 backdrop-blur-md">
                             <h3 class="cat-card-title text-white text-3xl font-black tracking-wide uppercase mb-4 group-hover:text-primary transition-colors">{{ $cat['title'] ?? $defaultCatBlocks[$ci]['title'] }}</h3>
                             <p class="cat-card-desc text-sm text-gray-400 mb-8 max-w-md">{{ $cat['description'] ?? $defaultCatBlocks[$ci]['description'] }}</p>
@@ -928,6 +1035,66 @@
     @endif
 
     <script>
+        // ── Lazy Image Blur-Up: observe and load ──
+        document.addEventListener('DOMContentLoaded', function() {
+            // Skeleton auto-hide
+            const skeletons = document.querySelectorAll('[data-skeleton]');
+            if (skeletons.length > 0) {
+                window.addEventListener('load', function() {
+                    skeletons.forEach(function(el) {
+                        el.style.transition = 'opacity 0.5s ease';
+                        el.style.opacity = '0';
+                        setTimeout(function() { el.style.display = 'none'; }, 600);
+                    });
+                });
+            }
+
+            // Lazy image blur-up
+            const lazyImages = document.querySelectorAll('img.lazy-img');
+            if (lazyImages.length === 0) return;
+
+            function handleImageLoad(img) {
+                if (img.classList.contains('loaded')) return;
+                // If already naturally loaded (cached), mark immediately
+                if (img.complete && img.naturalWidth > 0) {
+                    img.classList.add('loaded');
+                    return;
+                }
+                // Otherwise wait for load event
+                img.addEventListener('load', function onLoad() {
+                    img.classList.add('loaded');
+                    img.removeEventListener('load', onLoad);
+                });
+                // Fallback: mark loaded even if error (avoids stuck blur)
+                img.addEventListener('error', function onErr() {
+                    img.classList.add('loaded');
+                    img.removeEventListener('error', onErr);
+                });
+            }
+
+            // Intersection Observer for true lazy loading
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            // Set src from data-src if present (for true lazy)
+                            if (img.dataset.src && !img.src) {
+                                img.src = img.dataset.src;
+                            }
+                            handleImageLoad(img);
+                            observer.unobserve(img);
+                        }
+                    });
+                }, { rootMargin: '200px 0px' });
+
+                lazyImages.forEach(function(img) { observer.observe(img); });
+            } else {
+                // Fallback: load all immediately
+                lazyImages.forEach(function(img) { handleImageLoad(img); });
+            }
+        });
+
         function scrollCarousel(e, id, direction) {
             if (e) {
                 e.preventDefault();
@@ -973,5 +1140,9 @@
             requestAnimationFrame(animation);
         }
     </script>
+
+    @include('ecommerce::components.storefront-chat-bubble')
+    @include('ecommerce::components.storefront-scroll-top')
+
 </body>
 </html>

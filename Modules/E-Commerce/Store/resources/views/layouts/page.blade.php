@@ -95,5 +95,10 @@
     </main>
 
     <x-footer :storefrontName="$storefrontName" :store="$store" :logoUrl="$logoUrl" :layout="$layout" />
+
+    @unless(request()->routeIs('ecommerce.checkout.*') || request()->routeIs('ecommerce.checkout.success*'))
+        @include('ecommerce::components.storefront-chat-bubble')
+    @endunless
+    @include('ecommerce::components.storefront-scroll-top')
 </body>
 </html>

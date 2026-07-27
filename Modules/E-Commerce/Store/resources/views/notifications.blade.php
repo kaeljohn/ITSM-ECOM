@@ -223,38 +223,120 @@
             <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
                 <div>
                     <h1 class="text-3xl sm:text-4xl font-black text-white mb-2">Notifications</h1>
-                    <p class="text-sm text-gray-400">Stay updated with your latest alerts and offers.</p>
+                    <p class="text-sm text-gray-400">
+                        @auth('ecommerce')
+                            @if($unreadCount > 0)
+                                You have <strong class="text-primary">{{ $unreadCount }}</strong> unread notification{{ $unreadCount !== 1 ? 's' : '' }}.
+                            @else
+                                All caught up!
+                            @endif
+                        @endauth
+                        @guest('ecommerce')
+                            <a href="{{ route('ecommerce.login', ['store' => $store]) }}" class="text-primary hover:underline">Sign in</a> to see your notifications.
+                        @endguest
+                    </p>
                 </div>
-                <button class="text-sm font-bold text-gray-400 hover:text-white transition-colors flex items-center gap-2">
-                    <i class="ph-bold ph-check-circle"></i> Mark all as read
-                </button>
+                @auth('ecommerce')
+                    @if($unreadCount > 0)
+                        <button id="customer-notif-mark-all" class="text-sm font-bold text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+                            <i class="ph-bold ph-check-circle"></i> Mark all as read
+                        </button>
+                    @endif
+                @endauth
             </div>
 
-            <div class="space-y-4">
-                
-                <!-- Notification Item -->
-                <div class="liquid-glass rounded-3xl p-6 border border-white/10 flex flex-col sm:flex-row items-start gap-6 relative group hover:border-primary/30 transition-all shadow-[0_5px_20px_rgba(0,0,0,0.5)] bg-white/5">
-                    <div class="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border border-primary/20">
-                        <i class="ph-fill ph-ticket text-2xl text-primary"></i>
-                    </div>
-                    <div class="flex-1 flex flex-col justify-center py-1">
-                        <div class="flex items-center gap-3 mb-1">
-                            <h3 class="text-lg font-bold text-white group-hover:text-primary transition-colors">Special Offer!</h3>
-                            <span class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(255,107,0,0.8)]"></span>
+            <div class="space-y-4" id="customer-notif-list">
+                @auth('ecommerce')
+                    @forelse($notifications as $notif)
+                        <a href="{{ $notif->link ?: '#' }}" class="liquid-glass rounded-3xl p-6 border border-white/10 flex flex-col sm:flex-row items-start gap-6 relative group hover:border-primary/30 transition-all shadow-[0_5px_20px_rgba(0,0,0,0.5)] bg-white/5 {{ $notif->is_read ? '' : 'border-primary/20' }}">
+                            <div class="w-14 h-14 rounded-full bg-{{ $notif->icon_color ?? 'primary' }}/20 flex items-center justify-center shrink-0 border border-{{ $notif->icon_color ?? 'primary' }}/20">
+                                <i class="ph-fill {{ $notif->icon ?? 'ph-megaphone' }} text-2xl text-{{ $notif->icon_color ?? 'primary' }}"></i>
+                            </div>
+                            <div class="flex-1 flex flex-col justify-center py-1">
+                                <div class="flex items-center gap-3 mb-1">
+                                    <h3 class="text-lg font-bold text-white group-hover:text-primary transition-colors">{{ $notif->title }}</h3>
+                                    @if(!$notif->is_read)
+                                        <span class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(255,107,0,0.8)]"></span>
+                                    @endif
+                                </div>
+                                @if($notif->body)
+                                    <p class="text-sm text-gray-300 leading-relaxed mb-3">{{ $notif->body }}</p>
+                                @endif
+                                <div class="flex items-center justify-between mt-auto">
+                                    <span class="text-xs text-gray-500 font-medium">{{ $notif->created_at->diffForHumans() }}</span>
+                                    @if($notif->link)
+                                        <span class="text-xs font-bold text-primary hover:text-white transition-colors flex items-center gap-1 group/link">
+                                            View <i class="ph-bold ph-arrow-right group-hover/link:translate-x-1 transition-transform"></i>
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        </a>
+                    @empty
+                        <div class="text-center py-20">
+                            <i class="ph ph-bell-slash text-5xl text-gray-600 mb-4 block"></i>
+                            <h3 class="text-xl font-bold text-white mb-2">No notifications yet</h3>
+                            <p class="text-gray-400 text-sm">Notifications from the store will appear here.</p>
                         </div>
-                        <p class="text-sm text-gray-300 leading-relaxed mb-3">Sign up for an account now to receive a 10% discount voucher on your first order. Don't miss out on upgrading your battle station for less.</p>
-                        <div class="flex items-center justify-between mt-auto">
-                            <span class="text-xs text-gray-500 font-medium">Just now</span>
-                            <a href="{{ route('ecommerce.login') }}" class="text-xs font-bold text-primary hover:text-white transition-colors flex items-center gap-1 group/link">
-                                Sign Up Now <i class="ph-bold ph-arrow-right group-hover/link:translate-x-1 transition-transform"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                    @endforelse
 
+                    @if($notifications instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                        <div class="pt-6">
+                            {{ $notifications->links() }}
+                        </div>
+                    @endif
+                @else
+                    <div class="text-center py-20">
+                        <i class="ph ph-bell-slash text-5xl text-gray-600 mb-4 block"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Sign in to see notifications</h3>
+                        <p class="text-gray-400 text-sm mb-6">Log in to receive order updates, promotions, and more.</p>
+                        <a href="{{ route('ecommerce.login', ['store' => $store]) }}" class="inline-block bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-bold transition-colors shadow-[0_0_20px_rgba(255,107,0,0.3)]">
+                            Sign In
+                        </a>
+                    </div>
+                @endauth
             </div>
         </div>
     </main>
+
+    @auth('ecommerce')
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var markAllBtn = document.getElementById('customer-notif-mark-all');
+        if (!markAllBtn) return;
+
+        markAllBtn.addEventListener('click', function() {
+            markAllBtn.disabled = true;
+            markAllBtn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Marking...';
+
+            fetch('{{ route("ecommerce.api.notifications.mark-all-read", ["store" => $store]) }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(resp) {
+                if (resp.success) {
+                    // Remove unread indicators
+                    document.querySelectorAll('#customer-notif-list a').forEach(function(el) {
+                        el.classList.remove('border-primary/20');
+                        var dot = el.querySelector('.w-2\.h-2\.rounded-full');
+                        if (dot) dot.remove();
+                    });
+                    markAllBtn.innerHTML = '<i class="ph-bold ph-check-circle"></i> All marked as read';
+                    markAllBtn.disabled = true;
+                }
+            })
+            .catch(function() {
+                markAllBtn.disabled = false;
+                markAllBtn.innerHTML = '<i class="ph-bold ph-check-circle"></i> Mark all as read';
+            });
+        });
+    });
+    </script>
+    @endauth
 
     <x-footer />
 

@@ -4,6 +4,7 @@ namespace Modules\Ecommerce\CRM\Models;
 
 use Modules\Ecommerce\Models\Concerns\BelongsToClient;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AbandonedCart extends Model
 {
@@ -32,6 +33,15 @@ class AbandonedCart extends Model
             'recovered_at' => 'datetime',
         ];
     }
+
+    // ─── Relationships ────────────────────────────────────────────
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'user_id', 'user_id');
+    }
+
+    // ─── Scopes ───────────────────────────────────────────────────
 
     public function scopePending($query)
     {

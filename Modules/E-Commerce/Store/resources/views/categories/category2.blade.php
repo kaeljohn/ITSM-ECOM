@@ -204,7 +204,7 @@
     <main data-preview-section="collections-hero" class="relative pt-32 pb-16 lg:pt-40 lg:pb-20 overflow-hidden w-full">
         <div class="w-full relative z-10 group" style="mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);">
             <div class="absolute inset-0 w-full h-full" data-preview-block="panel-collections-hero-bg" data-parent-section="collections-hero">
-                <img src="{{ $heroImage }}" alt="{{ strip_tags($title) }}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 opacity-40">
+                <img src="{{ $heroImage }}" alt="{{ strip_tags($title) }}" loading="lazy" class="lazy-img w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 opacity-40">
                 <div class="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-[#050505] pointer-events-none"></div>
             </div>
             
@@ -515,106 +515,5 @@
         });
     </script>
 
-    @if(request()->routeIs('ecommerce.admin.layout.preview') || request('layout') == 'true')
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const bindSectionEvents = (section) => {
-                if (section.dataset.previewBound) return;
-                section.dataset.previewBound = 'true';
-                section.style.cursor = 'pointer';
-                section.title = 'Click to edit section';
-
-                section.addEventListener('mouseover', (e) => {
-                    e.stopPropagation();
-                    section.style.outline = '2px dashed #008060';
-                    section.style.outlineOffset = '-2px';
-                });
-
-                section.addEventListener('mouseout', () => {
-                    section.style.outline = '';
-                    section.style.outlineOffset = '';
-                });
-
-                section.addEventListener('click', (e) => {
-                    if (!e.isTrusted) return;
-                    e.preventDefault();
-                    e.stopPropagation();
-                    window.parent.postMessage({
-                        action: 'select_section',
-                        section: section.dataset.previewSection
-                    }, '*');
-                });
-
-                section.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    window.parent.postMessage({
-                        action: 'contextmenu_section',
-                        section: section.dataset.previewSection,
-                        clientX: e.clientX,
-                        clientY: e.clientY
-                    }, '*');
-                });
-            };
-
-            const bindBlockEvents = (block) => {
-                if (block.dataset.previewBound) return;
-                block.dataset.previewBound = 'true';
-                block.style.cursor = 'pointer';
-                block.title = 'Click to edit this block';
-
-                block.addEventListener('mouseover', (e) => {
-                    e.stopPropagation();
-                    block.style.outline = '2px dashed #1B6FC8';
-                    block.style.outlineOffset = '2px';
-                    block.style.borderRadius = '8px';
-                });
-
-                block.addEventListener('mouseout', () => {
-                    block.style.outline = '';
-                    block.style.outlineOffset = '';
-                    block.style.borderRadius = '';
-                });
-
-                block.addEventListener('click', (e) => {
-                    if (!e.isTrusted) return;
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const sec = block.dataset.parentSection || block.dataset.previewSection || block.closest('[data-preview-section]')?.dataset.previewSection || 'collections-buttons';
-                    window.parent.postMessage({
-                        action: 'select_block',
-                        section: sec,
-                        block: block.dataset.previewBlock
-                    }, '*');
-                });
-
-                block.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    window.parent.postMessage({
-                        action: 'contextmenu_block',
-                        section: block.dataset.parentSection,
-                        block: block.dataset.previewBlock,
-                        clientX: e.clientX,
-                        clientY: e.clientY
-                    }, '*');
-                });
-            };
-
-            const initPreviewBinds = () => {
-                document.querySelectorAll('[data-preview-section]').forEach(bindSectionEvents);
-                document.querySelectorAll('[data-preview-block]').forEach(bindBlockEvents);
-            };
-
-            initPreviewBinds();
-
-            // Observe dynamic changes for JS populated product cards or filters
-            const observer = new MutationObserver(() => {
-                initPreviewBinds();
-            });
-            observer.observe(document.body, { childList: true, subtree: true });
-        });
-    </script>
-    @endif
 </body>
 </html>
