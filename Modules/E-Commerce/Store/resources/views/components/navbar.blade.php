@@ -65,7 +65,7 @@
         <!-- Logo & Name -->
         <a href="{{ url('/') }}" class="flex items-center gap-3 shrink-0 relative z-30">
             <img src="{{ $logoUrl }}" alt="{{ $storefrontName }} logo" class="h-9 w-auto block">
-            <span class="hidden md:block text-xl font-bold tracking-wide text-white">{{ $storefrontName }}</span>
+            <span class="hidden md:block text-xl font-bold tracking-wide text-white">{{ strtoupper($storefrontName) }}</span>
         </a>
 
 

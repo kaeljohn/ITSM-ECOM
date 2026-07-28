@@ -575,7 +575,7 @@
 </div>
 
 <form id="layout-form" class="builder-container" method="post" enctype="multipart/form-data" action="{{ route('ecommerce.admin.layout.save') }}?context={{ $context }}">
-    @csrf @method('put')
+    @csrf
     <input id="section-order" type="hidden" name="section_order" value="{{ old('section_order', $order) }}">
 
     <!-- Left Sidebar (Main Tree) -->

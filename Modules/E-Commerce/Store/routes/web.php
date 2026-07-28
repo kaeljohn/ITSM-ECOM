@@ -197,7 +197,7 @@ Route::name('ecommerce.')->group(function () {
             Route::get('/orders', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'orders'])->name('orders');
             Route::post('/orders/{id}/status', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'updateOrderStatus'])->name('orders.status');
             Route::get('/layout', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'editLayout'])->name('layout.edit');
-            Route::put('/layout', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'saveLayout'])->name('layout.save');
+            Route::match(['put', 'post'], '/layout', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'saveLayout'])->name('layout.save');
             Route::get('/layout/preview', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'previewLayout'])->name('layout.preview');
             Route::post('/layout/publish', [\Modules\Ecommerce\Http\Controllers\EcommerceAdminController::class, 'publishLayout'])->name('layout.publish');
 
