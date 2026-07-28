@@ -9,7 +9,7 @@ use Carbon\Carbon;
 class DatabaseSeeder extends Seeder
 {
     protected string $connection = 'ecommerce';
-    protected ?int $clientId = 13;
+    protected ?int $clientId = 1;
 
     public function run(): void
     {

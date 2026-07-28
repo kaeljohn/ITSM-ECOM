@@ -3379,53 +3379,7 @@
             });
         });
 
-        // Listen for section selection & block selection from iframe (click to edit)
-        window.addEventListener('message', (event) => {
-            if (!event.data) return;
 
-            if (event.data.action === 'select_section') {
-                const sectionId = event.data.section;
-                let wrapperId = 'wrapper-' + sectionId;
-                let panelId = 'panel-' + sectionId + '-main';
-
-                if (document.getElementById(wrapperId)) {
-                    openRightPanel(wrapperId, panelId);
-                    const trigger = document.querySelector('#' + wrapperId + ' .nav-trigger');
-                    if (trigger) {
-                        trigger.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                }
-            } else if (event.data.action === 'select_block') {
-                const sectionId = event.data.section;
-                const panelId = event.data.block;
-
-                let wrapperId = 'wrapper-' + sectionId;
-                if (!document.getElementById(wrapperId)) {
-                    const subItem = document.querySelector(`.sub-item[onclick*="${panelId}"]`);
-                    if (subItem) {
-                        const parentWrapper = subItem.closest('.nav-item-wrapper');
-                        if (parentWrapper) wrapperId = parentWrapper.id;
-                    }
-                }
-
-                if (document.getElementById(panelId)) {
-                    openRightPanel(wrapperId, panelId);
-
-                    // Highlight the specific block on the left panel
-                    const subItem = document.querySelector(`.sub-item[onclick*="${panelId}"]`);
-                    if (subItem) {
-                        highlightSub(subItem);
-                        subItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                } else {
-                    // Fallback to main panel if the block doesn't have a specific panel
-                    const mainPanelId = 'panel-' + sectionId + '-main';
-                    if (document.getElementById(mainPanelId)) {
-                        openRightPanel(wrapperId, mainPanelId);
-                    }
-                }
-            }
-        });
 
         // Drag and drop ordering for sections
         const sortableList = document.getElementById('sortable-sections');
@@ -3552,70 +3506,17 @@
             }
         };
 
-        // Save Draft — shows loading overlay, saves via AJAX, then shows success modal
+        // Save Draft — shows loading overlay, then submits the form normally
+        // (regular form submit handles file uploads more reliably than AJAX FormData)
         window.openSaveDraftModal = function() {
-            console.log('[SaveDraft] clicked');
             const overlay = document.getElementById('save-loading-overlay');
-            const modal = document.getElementById('save-draft-modal');
-
-            // Show loading overlay
             if (overlay) {
                 overlay.style.display = 'flex';
-            } else {
-                console.error('[SaveDraft] overlay element not found');
-                return;
             }
-
             const form = document.getElementById('layout-form');
-            if (!form) {
-                console.error('[SaveDraft] form element not found');
-                overlay.style.display = 'none';
-                return;
-            }
-
-            // Start save immediately — no rAF nesting
-            try {
-                const formData = new FormData(form);
-
-                fetch(form.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                        // Do NOT set Content-Type — browser auto-sets multipart/form-data with boundary
-                    }
-                })
-                .then(function(resp) {
-                    if (!resp.ok) {
-                        console.error('[SaveDraft] server returned', resp.status);
-                        return resp.text().then(function(text) {
-                            throw new Error('Server error ' + resp.status + ': ' + text.slice(0, 200));
-                        });
-                    }
-                    return resp.json();
-                })
-                .then(function(data) {
-                    console.log('[SaveDraft] success', data);
-                    overlay.style.display = 'none';
-                    if (modal) {
-                        modal.style.display = 'flex';
-                        void modal.offsetWidth;
-                        modal.classList.add('open');
-                    }
-                })
-                .catch(function(err) {
-                    console.error('[SaveDraft] error:', err);
-                    overlay.style.display = 'none';
-                    if (modal) {
-                        modal.style.display = 'flex';
-                        void modal.offsetWidth;
-                        modal.classList.add('open');
-                    }
-                });
-            } catch(err) {
-                console.error('[SaveDraft] FormData/request error:', err);
-                overlay.style.display = 'none';
+            if (form) {
+                // Use a tiny delay so the loading overlay renders before the page navigates
+                setTimeout(function() { form.submit(); }, 80);
             }
         };
 

@@ -21,13 +21,13 @@ class Kernel extends ConsoleKernel
             ->appendOutputTo(storage_path('logs/crm-abandoned-carts.log'));
 
         // Re-evaluate RFM scores and auto-segment assignments daily
-        $schedule->command('crm:evaluate-rfm', ['--client-id' => 13])
+        $schedule->command('crm:evaluate-rfm', ['--client-id' => 1])
             ->dailyAt('02:00')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/crm-evaluate-rfm.log'));
 
         // Re-evaluate churn risk labels daily
-        $schedule->command('crm:evaluate-churn', ['--client-id' => 13])
+        $schedule->command('crm:evaluate-churn', ['--client-id' => 1])
             ->dailyAt('03:00')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/crm-evaluate-churn.log'));
